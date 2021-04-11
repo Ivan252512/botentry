@@ -20,5 +20,8 @@ urlpatterns = [
     path('exchange/get_historical_trades/<str:symbol>', views.get_historical_trades, name='exchange-get-historical-trades'),
     path('exchange/get_aggregate_trades/<str:symbol>', views.get_aggregate_trades, name='exchange-get-aggregate-trades'),
     path('exchange/get_klines/<str:symbol>/<str:interval>', views.get_klines, name='exchange-get-klines'),   
-    path('exchange/get_historical_klines/<str:symbol>/<str:interval>/<str:start_str>/<str:end_str>', views.get_historical_klines, name='exchange-get-historical-klines'),       
+    path('exchange/get_historical_klines/<str:symbol>/<str:interval>/<str:start_str>/<str:end_str>', views.get_historical_klines, name='exchange-get-historical-klines'),   
+    
+    # User Account  
+    path('exchange/get_account', views.get_account, name='exchange-get-account-info'),
 ]

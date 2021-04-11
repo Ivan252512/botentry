@@ -120,5 +120,13 @@ def get_historical_klines(request, symbol, interval, start_str, end_str, limit):
         return JsonResponse({'message': historical_klines}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
-    
+       
+# User Account
+
+def get_account(request):
+    if request.method == "GET":
+        client = Client()
+        account = client.get_account()
+        return JsonResponse({'message': account}, status=200)
+    else:
+        return JsonResponse({'message': 'Metodo no permitido'}, status=405)
