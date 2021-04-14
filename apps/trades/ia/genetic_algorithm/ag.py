@@ -26,7 +26,7 @@ class Individual:
             count += 1
         return individual
     
-    def binToDec(self, a, b):
+    def binary_to_decimal(self, a, b):
         """ Converts binary values into a decimal values with one comma, between 
         [a,b] interval
         
@@ -43,7 +43,8 @@ class Individual:
             if i=='1':
                 dec+=2**(n-1)
             n-=1
-        return  a+((dec)/(2**len(self.dna)-1))*(b-a)
+        return  a+((dec)/(2**self.length-1))*(b-a)
+    
     
     def mutation(self):
         bin = list(self.dna)
