@@ -38,6 +38,9 @@ class Trader:
             quantity=_quantity,
             price=_price,
         )
+        
+    def strategy_1(self):
+        pass
             
     
 class TraderBUSDUSDT(Trader):
@@ -51,3 +54,5 @@ class TraderBUSDUSDT(Trader):
             *args, 
             **kwargs
         )
+        
+        
