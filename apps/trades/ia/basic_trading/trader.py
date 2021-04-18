@@ -1,4 +1,5 @@
 from apps.trades.binance.client import Client
+from apps.trades.ia.utils.graphs.graphics import Graphic
 
 class Trader:
     def __init__(self, _c1, _c2, _pair, _pwa):
@@ -39,8 +40,11 @@ class Trader:
             price=_price,
         )
         
-    def strategy_1(self):
-        pass
+    def visualization_klines(self):
+        klines = self.get_pair_klines_info()
+        graphic = Graphic(_raw_data=klines)
+        graphic.process_data()
+        
             
     
 class TraderBUSDUSDT(Trader):

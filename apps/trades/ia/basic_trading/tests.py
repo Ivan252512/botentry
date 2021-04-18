@@ -37,5 +37,8 @@ class TraderBUSDUSDTTestCase(TestCase):
     def test_get_pair_klines_info(self):
         self.trader.get_pair_klines_info()
         
+    def test_visualization_klines(self):
+        self.trader.visualization_klines()
+        
     
         
