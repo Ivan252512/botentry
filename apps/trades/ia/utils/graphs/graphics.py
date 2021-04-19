@@ -11,11 +11,13 @@ from apps.trades.binance.client import Client
 
 class Graphic:
 
-    def __init__(self, _raw_data):
-        self.raw_data = _raw_data[::-1]
+    def __init__(self, _raw_data, _pair):
+        self.raw_data = _raw_data
+        self.pair = _pair
         self.processed_data = None
-        self.processed_data_as_list = None 
-        self.graph = None 
+        self.ma = None 
+        self.graphic = None 
+        self.indicators = []
         
     def process_data(self):
         
@@ -51,14 +53,29 @@ class Graphic:
         df2 = df.set_index(datetime_index)
         df2.drop('date', axis=1, inplace=True)
         
-        print(df2)
+        self.processed_data = df2
         
-        fplt.plot(
-            df2,
-            type='candle',
-            title='Generic, March - 2020',
-            ylabel='Price ($)'
-        ) 
+    def calculate_moving_average(self, _periods):
+        self.processed_data['ma_{}'.format(_periods)] = self.processed_data.rolling(window=_periods)['open'].mean()
+        self.indicators.append('ma_{}'.format(_periods))
+        
+    def graph(self):
+        subplots = []
+        for i in self.indicators:
+            subplots.append(
+                fplt.make_addplot(
+                    self.processed_data[i],
+                    type='line'
+                )
+            )
 
-    def graph_only(self):
-        pass
+        fplt.plot(
+            self.processed_data,
+            type='candle',
+            style='charles',
+            title=self.pair,
+            ylabel='Price ($)',
+            volume=True,
+            ylabel_lower='Shares\nTraded',
+            addplot=subplots
+        ) 

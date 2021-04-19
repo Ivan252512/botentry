@@ -42,8 +42,12 @@ class Trader:
         
     def visualization_klines(self):
         klines = self.get_pair_klines_info()
-        graphic = Graphic(_raw_data=klines)
+        graphic = Graphic(_raw_data=klines, _pair=self.pair)
         graphic.process_data()
+        graphic.calculate_moving_average(_periods=3)
+        graphic.calculate_moving_average(_periods=6)
+        graphic.calculate_moving_average(_periods=9)
+        graphic.graph()
         
             
     
