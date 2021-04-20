@@ -59,8 +59,19 @@ class Graphic:
         self.processed_data['ma_{}'.format(_periods)] = self.processed_data.rolling(window=_periods)['open'].mean()
         self.indicators.append('ma_{}'.format(_periods))
         
+    def calculate_fibonacci_retractament(self):
+        fibo_levels = [0.382, 0.500, 0.618, 1]
+        count = 1
+        for fb in fibo_levels:
+            max = self.processed_data['open'].max()
+            min = self.processed_data['open'].min() 
+            self.processed_data['fr_{}'.format(count)] = [min + fb * (max - min) for _ in self.raw_data]
+            self.indicators.append('fr_{}'.format(count) )
+            count += 1
+        
     def graph(self):
         subplots = []
+        print(self.processed_data)
         for i in self.indicators:
             subplots.append(
                 fplt.make_addplot(

@@ -7,7 +7,7 @@ class Trader:
         self.coin1 = _c1
         self.coin2 = _c2
         self.pair = _pair
-        self.trading_interval = "1m"
+        self.trading_interval = "1d"
         self.percent_wallet_assigned = _pwa
         
     def get_account(self):
@@ -22,6 +22,7 @@ class Trader:
     def get_pair_klines_info(self):
         klines = self.client.get_klines(
             symbol=self.pair,
+            limit=500,
             interval=self.trading_interval
         )
         return klines
@@ -44,9 +45,10 @@ class Trader:
         klines = self.get_pair_klines_info()
         graphic = Graphic(_raw_data=klines, _pair=self.pair)
         graphic.process_data()
-        graphic.calculate_moving_average(_periods=3)
-        graphic.calculate_moving_average(_periods=6)
-        graphic.calculate_moving_average(_periods=9)
+        graphic.calculate_moving_average(_periods=7)
+        graphic.calculate_moving_average(_periods=25)
+        graphic.calculate_moving_average(_periods=99)
+        graphic.calculate_fibonacci_retractament()
         graphic.graph()
         
             
@@ -58,6 +60,18 @@ class TraderBUSDUSDT(Trader):
             _c1="BUSD",
             _c2="USDT",
             _pair="BUSDUSDT",
+            _pwa=_pwa,
+            *args, 
+            **kwargs
+        )
+        
+class TraderBTCBUSD(Trader):
+    
+    def __init__(self, _pwa, *args, **kwargs):
+        super().__init__(
+            _c1="BTC",
+            _c2="BUSD",
+            _pair="BTCBUSD",
             _pwa=_pwa,
             *args, 
             **kwargs
