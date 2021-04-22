@@ -9,6 +9,7 @@ class Trader:
         self.pair = _pair
         self.trading_interval = "1d"
         self.percent_wallet_assigned = _pwa
+        self.graphic = None
         
     def get_account(self):
         return self.client.get_account()
@@ -41,15 +42,18 @@ class Trader:
             price=_price,
         )
         
-    def visualization_klines(self):
+    def visualization(self):
         klines = self.get_pair_klines_info()
-        graphic = Graphic(_raw_data=klines, _pair=self.pair)
-        graphic.process_data()
-        graphic.calculate_moving_average(_periods=7)
-        graphic.calculate_moving_average(_periods=25)
-        graphic.calculate_moving_average(_periods=99)
-        graphic.calculate_fibonacci_retractament()
-        graphic.graph()
+        self.graphic = Graphic(_raw_data=klines, _pair=self.pair)
+        self.graphic.process_data()
+        self.graphic.calculate_moving_average(_periods=7)
+        self.graphic.calculate_moving_average(_periods=25)
+        self.graphic.calculate_moving_average(_periods=99)
+        self.graphic.calculate_fibonacci_retracement()
+        for i in [5]:
+            self.graphic.get_second_derivative(_sigma_gaussian_filter=i)
+        self.graphic.graph()
+        
         
             
     
@@ -77,4 +81,41 @@ class TraderBTCBUSD(Trader):
             **kwargs
         )
         
+        
+class TraderETHBUSD(Trader):
+    
+    def __init__(self, _pwa, *args, **kwargs):
+        super().__init__(
+            _c1="ETH",
+            _c2="BUSD",
+            _pair="ETHBUSD",
+            _pwa=_pwa,
+            *args, 
+            **kwargs
+        )
+        
+class TraderBNBBUSD(Trader):
+    
+    def __init__(self, _pwa, *args, **kwargs):
+        super().__init__(
+            _c1="BNB",
+            _c2="BUSD",
+            _pair="BNBBUSD",
+            _pwa=_pwa,
+            *args, 
+            **kwargs
+        )
+        
+
+class TraderADABUSD(Trader):
+    
+    def __init__(self, _pwa, *args, **kwargs):
+        super().__init__(
+            _c1="ADA",
+            _c2="BUSD",
+            _pair="ADABUSD",
+            _pwa=_pwa,
+            *args, 
+            **kwargs
+        )
         

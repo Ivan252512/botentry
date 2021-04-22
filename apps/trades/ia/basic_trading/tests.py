@@ -2,7 +2,10 @@ from django.test import TestCase
 
 from apps.trades.ia.basic_trading.trader import (
     TraderBUSDUSDT,
-    TraderBTCBUSD
+    TraderBTCBUSD,
+    TraderETHBUSD,
+    TraderBNBBUSD,
+    TraderADABUSD
 )
 from apps.trades.binance.client import Client
 
@@ -44,8 +47,8 @@ class TraderPair():
     def test_get_pair_klines_info(self):
         self.trader.get_pair_klines_info()
         
-    def test_visualization_klines(self):
-        self.trader.visualization_klines()
+    def test_visualization(self):
+        self.trader.visualization()
         
 
 class TraderBUSDUSDTTestCase(TraderPair, TestCase):
@@ -70,5 +73,36 @@ class TraderBTCBUSDTestCase(TraderPair, TestCase):
         super().setUp()
         self.trader = TraderBTCBUSD(_pwa=1)
 
+class TraderETHBUSDTestCase(TraderPair, TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.coin1 = "ETH"
+        self.coin2 = "BUSD"
+        self.pair = "ETHBUSD"
         
+    def setUp(self):
+        super().setUp()
+        self.trader = TraderETHBUSD(_pwa=1)
         
+class TraderBNBBUSDTestCase(TraderPair, TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.coin1 = "BNB"
+        self.coin2 = "BUSD"
+        self.pair = "BNBBUSD"
+        
+    def setUp(self):
+        super().setUp()
+        self.trader = TraderBNBBUSD(_pwa=1)
+
+class TraderADABUSDTestCase(TraderPair, TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.coin1 = "ADA"
+        self.coin2 = "BUSD"
+        self.pair = "ADABUSD"
+        
+    def setUp(self):
+        super().setUp()
+        self.trader = TraderADABUSD(_pwa=1)
+
