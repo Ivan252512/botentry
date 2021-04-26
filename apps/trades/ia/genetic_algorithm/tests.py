@@ -29,4 +29,5 @@ class IndividualTestCase(TestCase):
         self.assertEqual(0, self.individual.score)
         self.assertTrue(1 < self.individual.mutation_intensity < self.mutation_intensity)
         
-        
+    def test_hola(self):
+        pass
