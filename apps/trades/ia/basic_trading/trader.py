@@ -2,12 +2,12 @@ from apps.trades.binance.client import Client
 from apps.trades.ia.utils.graphs.graphics import Graphic
 
 class Trader:
-    def __init__(self, _c1, _c2, _pair, _pwa):
+    def __init__(self, _c1, _c2, _pair, _trading_interval, _pwa):
         self.client = Client()
         self.coin1 = _c1
         self.coin2 = _c2
         self.pair = _pair
-        self.trading_interval = "1d"
+        self.trading_interval = _trading_interval
         self.percent_wallet_assigned = _pwa
         self.graphic = None
         
@@ -42,7 +42,7 @@ class Trader:
             price=_price,
         )
         
-    def visualization(self):
+    def prepare_data(self, _graphic=True):
         klines = self.get_pair_klines_info()
         self.graphic = Graphic(_raw_data=klines, _pair=self.pair)
         self.graphic.process_data()
@@ -52,18 +52,20 @@ class Trader:
         self.graphic.calculate_fibonacci_retracement()
         for i in [3]:
             self.graphic.get_second_derivative(_sigma_gaussian_filter=i)
-        self.graphic.graph()
+        if _graphic:
+            self.graphic.graph()
         
         
             
     
 class TraderBUSDUSDT(Trader):
     
-    def __init__(self, _pwa, *args, **kwargs):
+    def __init__(self, _trading_interval, _pwa, *args, **kwargs):
         super().__init__(
             _c1="BUSD",
             _c2="USDT",
             _pair="BUSDUSDT",
+            _trading_interval=_trading_interval,
             _pwa=_pwa,
             *args, 
             **kwargs
@@ -71,11 +73,12 @@ class TraderBUSDUSDT(Trader):
         
 class TraderBTCBUSD(Trader):
     
-    def __init__(self, _pwa, *args, **kwargs):
+    def __init__(self, _trading_interval, _pwa, *args, **kwargs):
         super().__init__(
             _c1="BTC",
             _c2="BUSD",
             _pair="BTCBUSD",
+            _trading_interval=_trading_interval,
             _pwa=_pwa,
             *args, 
             **kwargs
@@ -84,11 +87,12 @@ class TraderBTCBUSD(Trader):
         
 class TraderETHBUSD(Trader):
     
-    def __init__(self, _pwa, *args, **kwargs):
+    def __init__(self, _trading_interval, _pwa, *args, **kwargs):
         super().__init__(
             _c1="ETH",
             _c2="BUSD",
             _pair="ETHBUSD",
+            _trading_interval=_trading_interval,
             _pwa=_pwa,
             *args, 
             **kwargs
@@ -96,11 +100,12 @@ class TraderETHBUSD(Trader):
         
 class TraderBNBBUSD(Trader):
     
-    def __init__(self, _pwa, *args, **kwargs):
+    def __init__(self, _trading_interval, _pwa, *args, **kwargs):
         super().__init__(
             _c1="BNB",
             _c2="BUSD",
             _pair="BNBBUSD",
+            _trading_interval=_trading_interval,
             _pwa=_pwa,
             *args, 
             **kwargs
@@ -109,11 +114,12 @@ class TraderBNBBUSD(Trader):
 
 class TraderADABUSD(Trader):
     
-    def __init__(self, _pwa, *args, **kwargs):
+    def __init__(self, _trading_interval, _pwa, *args, **kwargs):
         super().__init__(
             _c1="ADA",
             _c2="BUSD",
             _pair="ADABUSD",
+            _trading_interval=_trading_interval,
             _pwa=_pwa,
             *args, 
             **kwargs

@@ -128,6 +128,9 @@ class Graphic:
         self.processed_data['reg_mx_correspondent_{}_{}'.format(_df ,_df2)] = reg[0] * dates_intervals + reg[1]
         self.indicators.append('reg_mx_correspondent_{}_{}'.format(_df ,_df2))
         
+    def get_processed_data(self):
+        return self.processed_data.copy()
+        
     def graph(self):
         subplots = []
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):

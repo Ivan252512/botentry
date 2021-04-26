@@ -47,9 +47,11 @@ class TraderPair():
     def test_get_pair_klines_info(self):
         self.trader.get_pair_klines_info()
         
-    def test_visualization(self):
-        self.trader.visualization()
+    def test_prepare_data(self):
+        self.trader.prepare_data()
         
+        
+DEFAULT_TEST_TRADING_INTERVAL = "1d"
 
 class TraderBUSDUSDTTestCase(TraderPair, TestCase):
     def __init__(self, *args, **kwargs):
@@ -60,7 +62,7 @@ class TraderBUSDUSDTTestCase(TraderPair, TestCase):
         
     def setUp(self):
         super().setUp()
-        self.trader = TraderBUSDUSDT(_pwa=1)
+        self.trader = TraderBUSDUSDT(_trading_interval=DEFAULT_TEST_TRADING_INTERVAL, _pwa=1)
 
 class TraderBTCBUSDTestCase(TraderPair, TestCase):
     def __init__(self, *args, **kwargs):
@@ -71,7 +73,7 @@ class TraderBTCBUSDTestCase(TraderPair, TestCase):
         
     def setUp(self):
         super().setUp()
-        self.trader = TraderBTCBUSD(_pwa=1)
+        self.trader = TraderBTCBUSD(_trading_interval=DEFAULT_TEST_TRADING_INTERVAL, _pwa=1)
 
 class TraderETHBUSDTestCase(TraderPair, TestCase):
     def __init__(self, *args, **kwargs):
@@ -82,7 +84,7 @@ class TraderETHBUSDTestCase(TraderPair, TestCase):
         
     def setUp(self):
         super().setUp()
-        self.trader = TraderETHBUSD(_pwa=1)
+        self.trader = TraderETHBUSD(_trading_interval=DEFAULT_TEST_TRADING_INTERVAL, _pwa=1)
         
 class TraderBNBBUSDTestCase(TraderPair, TestCase):
     def __init__(self, *args, **kwargs):
@@ -93,7 +95,7 @@ class TraderBNBBUSDTestCase(TraderPair, TestCase):
         
     def setUp(self):
         super().setUp()
-        self.trader = TraderBNBBUSD(_pwa=1)
+        self.trader = TraderBNBBUSD(_trading_interval=DEFAULT_TEST_TRADING_INTERVAL, _pwa=1)
 
 class TraderADABUSDTestCase(TraderPair, TestCase):
     def __init__(self, *args, **kwargs):
@@ -104,5 +106,5 @@ class TraderADABUSDTestCase(TraderPair, TestCase):
         
     def setUp(self):
         super().setUp()
-        self.trader = TraderADABUSD(_pwa=1)
+        self.trader = TraderADABUSD(_trading_interval=DEFAULT_TEST_TRADING_INTERVAL, _pwa=1)
 

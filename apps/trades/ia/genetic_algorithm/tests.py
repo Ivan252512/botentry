@@ -1,6 +1,10 @@
 from django.test import TestCase
 from apps.trades.ia.genetic_algorithm.ag import (
-    Individual
+    Individual,
+)
+
+from apps.trades.ia.genetic_algorithm.function import (
+    BTCBUSDTraderFunction
 )
 
 import random
@@ -29,5 +33,3 @@ class IndividualTestCase(TestCase):
         self.assertEqual(0, self.individual.score)
         self.assertTrue(1 < self.individual.mutation_intensity < self.mutation_intensity)
         
-    def test_hola(self):
-        pass
