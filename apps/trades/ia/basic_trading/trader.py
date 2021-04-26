@@ -50,7 +50,7 @@ class Trader:
         self.graphic.calculate_moving_average(_periods=25)
         self.graphic.calculate_moving_average(_periods=99)
         self.graphic.calculate_fibonacci_retracement()
-        for i in [5]:
+        for i in [3]:
             self.graphic.get_second_derivative(_sigma_gaussian_filter=i)
         self.graphic.graph()
         
