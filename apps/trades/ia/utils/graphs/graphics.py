@@ -130,6 +130,19 @@ class Graphic:
         
     def get_processed_data(self):
         return self.processed_data.copy()
+    
+    def get_normalized_processed_data(self):
+        df = self.processed_data.copy()
+        result = self.processed_data.copy()
+        for feature_name in df.columns:
+            max_value = df[feature_name].max()
+            min_value = df[feature_name].min()
+            result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
+        result = result.replace(np.nan, 0)
+        return result
+    
+    def get_indicators(self):
+        return self.indicators.copy()
         
     def graph(self):
         subplots = []
