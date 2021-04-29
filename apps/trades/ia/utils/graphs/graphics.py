@@ -141,6 +141,7 @@ class Graphic:
         result = result.replace(np.nan, 0)
         return result
     
+    
     def get_indicators(self):
         return self.indicators.copy()
         

@@ -4,17 +4,19 @@ from apps.trades.ia.basic_trading.trader import (
 
 from apps.trades.ia.genetic_algorithm.ag import GeneticAlgorithm
 
-from apps.trades.ia.utils.utils import SimulateBasicWallet
+from apps.trades.ia.utils.utils import (
+    SimulateBasicWallet,
+    SimulateMarket
+)
+
 
 from abc import ABC, abstractmethod
 
 
 class TraderBot(ABC):
     def __init__(self):
-        self.ag = None
-        self.wallet = SimulateBasicWallet()
         self.pwa = 0
-        self.trader = None
+        self.market = None
         
     @abstractmethod
     def eval_function_with_genetic_algorithm(self, _period):
@@ -27,10 +29,29 @@ class BTCBUSDTraderBot(TraderBot):
         self.pwa = _pwa 
         
     def eval_function_with_genetic_algorithm(self, _period):
-        data = self._set_trader('1d')
-        environment = data.values.tolist()
+        # Trader info
+        trader = TraderBTCBUSD(
+            _trading_interval=_period,
+            _pwa=self.pwa
+        )
+        trader.prepare_data(_graphic=False)
+        data = trader.graphic.get_processed_data()
+        data_normalized = trader.graphic.get_normalized_processed_data()
+        environment = data_normalized.values.tolist()
+        
+        # Market info
+        self.market = SimulateMarket(
+            _data=data,
+            _price_column='open'
+        )
+        
+        # Wallet
+        wallet = SimulateBasicWallet()
+        
+        
+        # AG codification
         self.ag = GeneticAlgorithm(
-            _populations_quantity=100, 
+            _populations_quantity=1, 
             _population_min=20, 
             _population_max=100, 
             _individual_dna_length=20, 
@@ -40,19 +61,6 @@ class BTCBUSDTraderBot(TraderBot):
             _max_cod_ind_value=100,
             _environment=environment,
         )
-        self.ag.evolution()
+        self.ag.evolution(self.market, wallet, 10)
         
         
-    def _set_trader(self, _period):
-        trader = TraderBTCBUSD(
-            _trading_interval=_period,
-            _pwa=self.pwa
-        )
-        trader.prepare_data(_graphic=False)
-        data = trader.graphic.get_normalized_processed_data()
-        self.trader = trader
-        return data
-    
-    def _fund(self, _wallet):
-        total_disponible = self.trader.get_pair_assets_balance()['BUSD']
-        self.wallet.deposit(total_disponible * self.pwa)

@@ -2,6 +2,8 @@ import numpy as np
 import random
 import multiprocessing
 
+from scipy.stats import linregress
+
 # Genetic algorithm
 
 class Individual:
@@ -210,42 +212,69 @@ class GeneticAlgorithm:
                 )
             )
         
-    def evolution(self):
+    def evolution(self, _market, _wallet, _evaluation_intervals):
         populations_length = len(self.populations) - 1
-        while populations_length > 0:
+        while populations_length >= 0:
             population_length = self.populations[populations_length].quantity - 1
-            while population_length > 0:
+            while population_length >= 0:
                 individual = self.populations[populations_length].population[population_length]
                 score = 0
                 self.populations[populations_length].population[population_length].score = score
-                self.__evaluate(individual)
-                population_length -= 1    
+                evaluation = self.__evaluate(individual, _evaluation_intervals)
+                print(len(evaluation))
+                population_length -= 1  
             populations_length -= 1
             
-    def __evaluate(self, individual):
+    def __evaluate(self, individual, _evaluation_intervals):
         ag_variables = individual.decode_dna_variables_to_decimal()
         evaluated = []
-        for env_variables in self.environment:
+        lse = len(self.environment)
+        to_test_2 = []
+        for temp in self.environment:
             to_evaluation = []
             count_var = 0
-            for var in env_variables:
+            for var in temp:
                 to_evaluation.append(
                     (var, ag_variables[count_var])
                 )
                 count_var += 1
-                
             evaluated.append(self.__function(to_evaluation))
-        print(len(evaluated))
+            le = len(evaluated)
+            if le > _evaluation_intervals and le +_evaluation_intervals < lse:
+                e = evaluated[-_evaluation_intervals:]
+                regresion_plus_1_val = self.__linear_regresion_of_evaluated_interval_n_plus_1(e)
+                to_test_2.append(
+                    {
+                        'position_time': le + 1,
+                        'regresion_plus_1_val': regresion_plus_1_val,
+                        'percent_to_buy': self.__buy(regresion_plus_1_val)
+                    }
+                )
+
+        return to_test_2
         
         # Toca comprar cuando evaluated tenga algunos valores
         
-    def __buy_condition(_value, _purchasable):
-        if _value >= _purchasable:
+    def __buy(self, e):
+        normalized_evaluated = self.__normalize_evaluated(e)
+        return self.__percent_to_buy(normalized_evaluated)
+    
+    def __linear_regresion_of_evaluated_interval_n_plus_1(self, _evaluated_interval):
+        t = [i for i in range(len(_evaluated_interval))]
+        reg = linregress(
+            x=t,
+            y=_evaluated_interval
+        )
+        return reg[0] * t[-1] + 1 + reg[1]
+
+    def __normalize_evaluated(self, e):
+        return e /  self.max_function_val 
+
+    def __percent_to_buy(self, ne):
+        return ne if self.__buy_condition(ne) else 0       
         
-    def __fitness(self, _evaluated):
-        for e in evaluated:
-            pass
-            
+    def __buy_condition(self, _value):
+        return _value >=  0.2
         
     def __function(self, to_eval):
         lambdas = []
