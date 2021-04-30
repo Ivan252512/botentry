@@ -66,7 +66,7 @@ class BTCBUSDTraderBot(TraderBot):
             _wallet=wallet, 
             _initial_amount=1000, 
             _evaluation_intervals=10, 
-            _generations=100
+            _generations=100000
         )
         
         
