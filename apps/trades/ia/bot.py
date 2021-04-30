@@ -52,11 +52,11 @@ class BTCBUSDTraderBot(TraderBot):
         # AG codification
         self.ag = GeneticAlgorithm(
             _populations_quantity=1, 
-            _population_min=200, 
-            _population_max=5000, 
+            _population_min=20, 
+            _population_max=500, 
             _individual_dna_length=32, 
             _individual_encoded_variables_quantity=len(environment[0]),
-            _individual_muatition_intensity=5,
+            _individual_muatition_intensity=10,
             _min_cod_ind_value=-10000,
             _max_cod_ind_value=10000,
             _environment=environment,
@@ -66,7 +66,7 @@ class BTCBUSDTraderBot(TraderBot):
             _wallet=wallet, 
             _initial_amount=1000, 
             _evaluation_intervals=10, 
-            _generations=100000
+            _generations=1000
         )
         
         

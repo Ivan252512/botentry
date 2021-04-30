@@ -1,6 +1,6 @@
 import numpy as np
 import random
-import multiprocessing
+from multiprocessing.pool import ThreadPool
 
 from scipy.stats import linregress
 
@@ -141,7 +141,7 @@ class Population:
         
         
         new_population = []
-        for _ in range(half + 3):
+        for _ in range(half * 2):
             mother = best_ten_percent[random.randint(0, ten_percent - 1)].dna
             father = best_half[random.randint(0, half - 1)].dna
             new_population.append(
@@ -151,7 +151,7 @@ class Population:
                 )
             )
             
-        current_generation = best_half
+        current_generation = best_ten_percent
         new_quantity = self.quantity - len(current_generation)
         while new_quantity > 0:
             current_generation.append(new_population[new_quantity])
@@ -185,7 +185,13 @@ class Population:
         for i in self.population:
             score += i.score / self.quantity
         self.score = score
-
+        
+    def get_best_individual_constants(self):
+        self.__order_by_individual_score()
+        best_individual = self.population[-1]
+        return best_individual.decode_dna_variables_to_decimal()
+        
+        
 
 class GeneticAlgorithm:
     def __init__(self,
@@ -221,12 +227,10 @@ class GeneticAlgorithm:
         populations_length = len(self.populations) - 1
         while populations_length >= 0:
             population = self.populations[populations_length]
-            for _ in range(_generations):
+            for gen in range(_generations):
                 population_length = self.populations[populations_length].quantity - 1
                 while population_length >= 0:
                     individual = population.population[population_length]
-                    score = 0
-                    self.populations[populations_length].population[population_length].score = score
                     evaluation = self.__evaluate(individual, _evaluation_intervals)
                     
                     _wallet.restart()
@@ -258,10 +262,14 @@ class GeneticAlgorithm:
                         total_earn = _wallet.get_total_balance_in_coin1(_market.get_last_price())
                         individual.set_score(total_earn/_initial_amount)
                         population_length -= 1  
-                    population.breed()
-                    population.calculate_population_score()
-                    print(population.score)
+                population.breed()
+                population.calculate_population_score()
+                print("++++++++++++++++++++++GEN {}++++++++++++++++++++++".format(gen))
+                print(population.score, population.get_best_individual_constants())
             populations_length -= 1
+            
+    def optimized_fit_function(self, _data):
+        pass
             
     def __evaluate(self, individual, _evaluation_intervals):
         ag_variables = individual.decode_dna_variables_to_decimal()
