@@ -37,6 +37,18 @@ class SimulateBasicWallet:
     def get_total_balance_in_coin2(self, _change_value):
         return self.__coin_2_balance + self.__coin_1_balance * _change_value
     
+    def get_balance_in_coin1(self):
+        return self.__coin_1_balance
+    
+    def get_balance_in_coin2(self):
+        return self.__coin_2_balance
+    
+    def get_all_balances(self):
+        return {
+            'coin_1': self.__coin_1_balance,
+            'coin_2': self.__coin_2_balance
+        }
+    
     def restart(self):
         self.__coin_1_balance = 0
         self.__coin_2_balance = 0
@@ -49,8 +61,11 @@ class SimulateMarket:
         self.price_column = _price_column
         
     def transaction_at_moment(self, quantity, moment):
-        for t in self.data[self.price_column]:
+        for t_price in self.data[self.price_column]:
             if moment == 0:
-                return t * quantity
+                return quantity / t_price, t_price
             moment -= 1
-        return 0
+        return 0, 0
+    
+    def get_last_price(self):
+        return self.data[self.price_column][-1]

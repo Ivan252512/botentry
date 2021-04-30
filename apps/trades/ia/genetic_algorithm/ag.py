@@ -128,7 +128,7 @@ class Population:
             count += 1
         return population
             
-    def breed(self, bin1, bin2):
+    def breed(self):
         """
         Reproduction function, cross the gen for two individuals, uniform cross.
         :param bin1: One individual
@@ -139,11 +139,11 @@ class Population:
         ten_percent = int(self.quantity/10)
         best_ten_percent = self.population[:ten_percent]
         
+        
         new_population = []
-        fifty_percent = ten_percent * 5
-        for _ in range(fifty_percent):
-            mother = best_ten_percent[random.randint(0, ten_percent)]
-            father = best_half[random.randint(0, half)]
+        for _ in range(half + 3):
+            mother = best_ten_percent[random.randint(0, ten_percent - 1)].dna
+            father = best_half[random.randint(0, half - 1)].dna
             new_population.append(
                 self.__cross_genes(
                     father,
@@ -151,7 +151,12 @@ class Population:
                 )
             )
             
-        self.population = best_half + new_population
+        current_generation = best_half
+        new_quantity = self.quantity - len(current_generation)
+        while new_quantity > 0:
+            current_generation.append(new_population[new_quantity])
+            new_quantity -= 1
+            
             
     def __order_by_individual_score(self):
         self.population.sort(key=lambda individual: individual.score)
@@ -175,7 +180,7 @@ class Population:
         son.mutation()
         return son
     
-    def _calculate_population_score(self):
+    def calculate_population_score(self):
         score = 0
         for i in self.population:
             score += i.score / self.quantity
@@ -212,17 +217,50 @@ class GeneticAlgorithm:
                 )
             )
         
-    def evolution(self, _market, _wallet, _evaluation_intervals):
+    def evolution(self, _market, _wallet, _initial_amount, _evaluation_intervals, _generations):
         populations_length = len(self.populations) - 1
         while populations_length >= 0:
-            population_length = self.populations[populations_length].quantity - 1
-            while population_length >= 0:
-                individual = self.populations[populations_length].population[population_length]
-                score = 0
-                self.populations[populations_length].population[population_length].score = score
-                evaluation = self.__evaluate(individual, _evaluation_intervals)
-                print(len(evaluation))
-                population_length -= 1  
+            population = self.populations[populations_length]
+            for _ in range(_generations):
+                population_length = self.populations[populations_length].quantity - 1
+                while population_length >= 0:
+                    individual = population.population[population_length]
+                    score = 0
+                    self.populations[populations_length].population[population_length].score = score
+                    evaluation = self.__evaluate(individual, _evaluation_intervals)
+                    
+                    _wallet.restart()
+                    _wallet.deposit_coin_1(_initial_amount)
+                    stop_loss_list = []
+                    for e in evaluation:
+                        if e["percent_to_buy"] > 0.05:
+                            coin_1_quantity = e['percent_to_buy'] * _wallet.get_balance_in_coin1()
+                            coin_2_quantity, coin_2_price = _market.transaction_at_moment(coin_1_quantity, e['position_time'])
+                            _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity)
+                            stop_loss_list.append(
+                                {
+                                    'price': coin_2_price - (coin_2_price * 0.05),
+                                    'quantity': coin_2_quantity
+                                }
+                            )
+                            count_sl = 0
+                            sl_length = len(stop_loss_list)
+                            while count_sl < sl_length:
+                                stop_loss = stop_loss_list[count_sl]
+                                if stop_loss['price'] < coin_2_price:
+                                    _, coin_2_sl_price = _market.transaction_at_moment(0, e['position_time'])
+                                    coin_1_sl_quantity = stop_loss['quantity'] / coin_2_sl_price
+                                    _wallet.sell_coin_2(coin_1_sl_quantity, stop_loss['quantity'])
+                                    stop_loss_list.pop(count_sl)
+                                    sl_length -= 1
+                                count_sl += 1
+                                
+                        total_earn = _wallet.get_total_balance_in_coin1(_market.get_last_price())
+                        individual.set_score(total_earn/_initial_amount)
+                        population_length -= 1  
+                    population.breed()
+                    population.calculate_population_score()
+                    print(population.score)
             populations_length -= 1
             
     def __evaluate(self, individual, _evaluation_intervals):
@@ -240,7 +278,7 @@ class GeneticAlgorithm:
                 count_var += 1
             evaluated.append(self.__function(to_evaluation))
             le = len(evaluated)
-            if le > _evaluation_intervals and le +_evaluation_intervals < lse:
+            if le > _evaluation_intervals and le +_evaluation_intervals <= lse:
                 e = evaluated[-_evaluation_intervals:]
                 regresion_plus_1_val = self.__linear_regresion_of_evaluated_interval_n_plus_1(e)
                 to_test_2.append(
@@ -250,7 +288,6 @@ class GeneticAlgorithm:
                         'percent_to_buy': self.__buy(regresion_plus_1_val)
                     }
                 )
-
         return to_test_2
         
         # Toca comprar cuando evaluated tenga algunos valores
@@ -274,7 +311,7 @@ class GeneticAlgorithm:
         return ne if self.__buy_condition(ne) else 0       
         
     def __buy_condition(self, _value):
-        return _value >=  0.2
+        return _value > 0
         
     def __function(self, to_eval):
         lambdas = []
@@ -282,7 +319,7 @@ class GeneticAlgorithm:
             lambdas.append(
                 {
                     
-                    'func': lambda x : x[0] * x[1] / self.individual_encoded_variables_quantity,
+                    'func': lambda x : x[0] * x[1],
                     'eval': v # (variable_data, valor ag)
                 }
             )
