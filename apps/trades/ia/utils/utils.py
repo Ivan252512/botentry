@@ -60,12 +60,21 @@ class SimulateMarket:
         self.data = _data 
         self.price_column = _price_column
         
-    def transaction_at_moment(self, quantity, moment):
+    def transaction_at_moment_buy_coin2(self, quantity, moment):
         for t_price in self.data[self.price_column]:
             if moment == 0:
                 return quantity / t_price, t_price
             moment -= 1
         return 0, 0
+    
+    def transaction_at_moment_sell_coin2(self, quantity, moment):
+        for t_price in self.data[self.price_column]:
+            if moment == 0:
+                return quantity * t_price, t_price
+            moment -= 1
+        return 0, 0
+    
+    
     
     def get_last_price(self):
         return self.data[self.price_column][-1]

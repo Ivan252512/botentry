@@ -97,8 +97,8 @@ class Graphic:
         self.indicators.append('fd_high_{}'.format(_sigma_gaussian_filter))
         self.processed_data['d2_high_{}'.format(_sigma_gaussian_filter)] = np.gradient(np.gradient(filtered_data_high))
         self.indicators.append('d2_high_{}'.format(_sigma_gaussian_filter))
-        self._put_min_respectly_in_data_df('low', 'd2_low_{}'.format(_sigma_gaussian_filter), _sigma_gaussian_filter)
-        self._put_max_respectly_in_data_df('high', 'd2_high_{}'.format(_sigma_gaussian_filter),_sigma_gaussian_filter)
+        #self._put_min_respectly_in_data_df('low', 'd2_low_{}'.format(_sigma_gaussian_filter), _sigma_gaussian_filter)
+        #self._put_max_respectly_in_data_df('high', 'd2_high_{}'.format(_sigma_gaussian_filter),_sigma_gaussian_filter)
         
     def _put_min_respectly_in_data_df(self, _df, _df2, _sigma_gaussian_filter):
         df = self.processed_data

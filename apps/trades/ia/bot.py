@@ -5,7 +5,6 @@ from apps.trades.ia.basic_trading.trader import (
 from apps.trades.ia.genetic_algorithm.ag import GeneticAlgorithm
 
 from apps.trades.ia.utils.utils import (
-    SimulateBasicWallet,
     SimulateMarket
 )
 
@@ -45,28 +44,24 @@ class BTCBUSDTraderBot(TraderBot):
             _price_column='open'
         )
         
-        # Wallet
-        wallet = SimulateBasicWallet()
-        
-        
         # AG codification
         self.ag = GeneticAlgorithm(
-            _populations_quantity=1, 
-            _population_min=20, 
-            _population_max=500, 
-            _individual_dna_length=32, 
+            _populations_quantity=12, 
+            _population_min=200, 
+            _population_max=5000, 
+            _individual_dna_length=6, 
             _individual_encoded_variables_quantity=len(environment[0]),
-            _individual_muatition_intensity=10,
-            _min_cod_ind_value=-10000,
-            _max_cod_ind_value=10000,
+            _individual_muatition_intensity=3,
+            _min_cod_ind_value=-1000,
+            _max_cod_ind_value=1000,
             _environment=environment,
         )
-        self.ag.evolution(
+        eval = self.ag.evolution(
             _market=self.market, 
-            _wallet=wallet, 
-            _initial_amount=1000, 
+            _initial_amount=5000, 
             _evaluation_intervals=10, 
-            _generations=1000
+            _generations=3
         )
+        
         
         

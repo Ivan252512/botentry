@@ -1,8 +1,14 @@
 import numpy as np
 import random
-from multiprocessing.pool import ThreadPool
+from numba import jit, cuda
 
 from scipy.stats import linregress
+
+from apps.trades.ia.utils.utils import (
+    SimulateBasicWallet,
+)
+
+from multiprocessing import Pool
 
 # Genetic algorithm
 
@@ -19,12 +25,18 @@ class Individual:
         self.length = _length
         self.encencoded_variables_quantity = _encoded_variables_quantity
         self.mutation_intensity = random.randint(1, _mutation_intensity)
-        self.dna = _dna if _dna else self.generate_individual() 
+        self.dna = _dna if _dna else self.generate_individual(
+            self.length,
+            self.encencoded_variables_quantity
+        ) 
         self.score = 0
         self.min_value = _min_value
         self.max_value = _max_value
+        self.relevant_info = []
         
-    def generate_individual(self):
+    @staticmethod
+    @jit(nopython=True)
+    def generate_individual(length, encencoded_variables_quantity):
         """Generate n bits strings individual
         
         :param nbits: String length simulating the bits quantity
@@ -33,22 +45,40 @@ class Individual:
         """ 
         count = 0
         individual = ""
-        all_dna_length = self.length * self.encencoded_variables_quantity
+        all_dna_length = length * encencoded_variables_quantity
         while(count<all_dna_length):
             individual += str(random.randint(0, 1))
             count += 1 
         return individual
     
     def decode_dna_variables_to_decimal(self):
-        dnas = self._cut_dna(self.dna, self.length)
+        dnas = cut_dna(self.dna, self.length)
         decoded_variables = []
         for gen in dnas:
             decoded_variables.append(
-                self._binary_to_decimal(gen)
+                self.binary_to_decimal(gen, self.min_value, self.max_value)
             )
         return decoded_variables
     
-    def _binary_to_decimal(self, gen):
+    def mutation(self):
+        bin = list(self.dna)
+        for _ in range(int(len(bin)/random.randint(1, self.mutation_intensity))):
+            rand=random.randint(0, self.length - 1)
+            if(bin[rand]=="0"):
+                bin[rand]="1"
+            if(bin[rand]=="1"):
+                bin[rand]="0"
+        self.dna = "".join(bin)
+
+    def set_score(self, _score):
+        self.score = _score
+        
+    def add_relevant_info(self, _info):
+        self.relevant_info.append(_info)
+
+    @staticmethod
+    @jit(nopython=True)
+    def binary_to_decimal(gen, a, b):
         """ Converts binary values into a decimal values with one comma, between 
         [a,b] interval
         
@@ -59,8 +89,6 @@ class Individual:
         :param b: End interval
         :type b: int
         """
-        a=self.min_value
-        b=self.max_value
         n_count = len(gen)
         n = n_count
         dec = 0
@@ -69,29 +97,14 @@ class Individual:
                 dec+=2**(n_count-1)
             n_count-=1
         return  a+((dec)/(2**n-1))*(b-a)
-    
-    def _cut_dna(self, dna, len_interval):
-        if len(dna) % len_interval:
-            raise Exception("The length of dna must be multiple of len_interval ")
-        if len(dna) == len_interval:
-            return [dna]
-        return [dna[:len_interval]] + self._cut_dna(dna[len_interval:], len_interval)
         
-    
-    def mutation(self):
-        bin = list(self.dna)
-        for _ in range(int(len(bin)/random.randint(1, self.mutation_intensity))):
-            rand=random.randint(0, self.length - 1)
-            if(bin[rand]=="0"):
-                bin[rand]="1"
-            if(bin[rand]=="1"):
-                bin[rand]="0"
-        return "".join(bin)
-
-    def set_score(self, _score):
-        self.score = _score
-        
-
+@cuda.jit()    
+def cut_dna(dna, len_interval):
+    if len(dna) % len_interval:
+        raise Exception("The length of dna must be multiple of len_interval ")
+    if len(dna) == len_interval:
+        return [dna]
+    return [dna[:len_interval]] + cut_dna(dna[len_interval:], len_interval)
 
 
 class Population:
@@ -102,7 +115,8 @@ class Population:
                  _dna_length, 
                  _mutation_intensity, 
                  _min_cod_ind_value,
-                 _max_cod_ind_value
+                 _max_cod_ind_value,
+                 _population_origin=None
         ):
         self.quantity = _quantity
         self.dna_length = _dna_length
@@ -111,23 +125,44 @@ class Population:
         self.min_cod_ind_value=_min_cod_ind_value
         self.max_cod_ind_value=_max_cod_ind_value
         self.score = 0
-        self.population = self.generate_population()
+        self.population = self.generate_population(_population_origin=_population_origin) 
     
-    def generate_population(self):
-        population = []
-        count = 0
-        while(count < self.quantity):
-            individual = Individual(
-                _length=self.dna_length, 
-                _encoded_variables_quantity =self.encoded_variables_quantity,
-                _mutation_intensity=self.mutation_intensity,
-                _min_value=self.min_cod_ind_value,
-                _max_value=self.max_cod_ind_value
-            )
-            population.append(individual)
-            count += 1
-        return population
-            
+    def generate_population(self, _population_origin):
+        if not _population_origin:
+            population = []
+            count = 0
+            while(count < self.quantity):
+                individual = Individual(
+                    _length=self.dna_length, 
+                    _encoded_variables_quantity =self.encoded_variables_quantity,
+                    _mutation_intensity=self.mutation_intensity,
+                    _min_value=self.min_cod_ind_value,
+                    _max_value=self.max_cod_ind_value
+                )
+                population.append(individual)
+                count += 1
+            return population
+        else:
+            population = []
+            count = 0
+            while(count < self.quantity):
+                length_pop_orig = len(_population_origin)
+                idx = random.randint(0, length_pop_orig - 1)
+                new_or_old = random.randint(0, 3)
+                if new_or_old == 0:
+                    population.append(_population_origin[idx])
+                else:
+                    individual = Individual(
+                        _length=self.dna_length, 
+                        _encoded_variables_quantity =self.encoded_variables_quantity,
+                        _mutation_intensity=self.mutation_intensity,
+                        _min_value=self.min_cod_ind_value,
+                        _max_value=self.max_cod_ind_value
+                    )
+                    population.append(individual)
+                count += 1
+            return population
+                
     def breed(self):
         """
         Reproduction function, cross the gen for two individuals, uniform cross.
@@ -161,6 +196,7 @@ class Population:
     def __order_by_individual_score(self):
         self.population.sort(key=lambda individual: individual.score)
 
+    
     def __cross_genes(self, father, mother):
         son_dna = ""
         for i in range(self.dna_length):
@@ -190,8 +226,21 @@ class Population:
         self.__order_by_individual_score()
         best_individual = self.population[-1]
         return best_individual.decode_dna_variables_to_decimal()
-        
-        
+    
+    def get_best_individual_score(self):
+        self.__order_by_individual_score()
+        best_individual = self.population[-1]
+        return best_individual.score
+    
+    def get_best_individual_operarions(self):
+        self.__order_by_individual_score()
+        best_individual = self.population[-1]
+        return best_individual.relevant_info
+    
+    def get_best_twenty_percent_individuals(self):
+        self.__order_by_individual_score()
+        twenty_percent = int(self.quantity / 5)
+        return self.population[:twenty_percent]
 
 class GeneticAlgorithm:
     def __init__(self,
@@ -203,14 +252,22 @@ class GeneticAlgorithm:
                  _individual_muatition_intensity,
                  _min_cod_ind_value,
                  _max_cod_ind_value,
-                 _environment
+                 _environment,
+                 _individual_relevant_info=False
         ):
         self.populations = []
+        self.populations_quantity = _populations_quantity
+        self.population_min = _population_min
+        self.population_max = _population_max
+        self.individual_dna_length = _individual_dna_length
+        self.individual_encoded_variables_quantity = _individual_encoded_variables_quantity
+        self.individual_muatition_intensity = _individual_muatition_intensity
         self.environment = _environment
         self.min_ag_dna_val = _min_cod_ind_value
         self.max_ag_dna_val = _max_cod_ind_value
         self.individual_encoded_variables_quantity = _individual_encoded_variables_quantity
         self.max_function_val = self.max_ag_dna_val * self.individual_encoded_variables_quantity
+        self.individual_relevant_info = _individual_relevant_info
         for _ in range(_populations_quantity):
             self.populations.append(
                 Population(
@@ -222,54 +279,119 @@ class GeneticAlgorithm:
                     _max_cod_ind_value=_max_cod_ind_value
                 )
             )
-        
-    def evolution(self, _market, _wallet, _initial_amount, _evaluation_intervals, _generations):
-        populations_length = len(self.populations) - 1
-        while populations_length >= 0:
-            population = self.populations[populations_length]
-            for gen in range(_generations):
-                population_length = self.populations[populations_length].quantity - 1
-                while population_length >= 0:
-                    individual = population.population[population_length]
-                    evaluation = self.__evaluate(individual, _evaluation_intervals)
-                    
-                    _wallet.restart()
-                    _wallet.deposit_coin_1(_initial_amount)
-                    stop_loss_list = []
-                    for e in evaluation:
-                        if e["percent_to_buy"] > 0.05:
-                            coin_1_quantity = e['percent_to_buy'] * _wallet.get_balance_in_coin1()
-                            coin_2_quantity, coin_2_price = _market.transaction_at_moment(coin_1_quantity, e['position_time'])
-                            _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity)
-                            stop_loss_list.append(
-                                {
-                                    'price': coin_2_price - (coin_2_price * 0.05),
-                                    'quantity': coin_2_quantity
-                                }
-                            )
-                            count_sl = 0
-                            sl_length = len(stop_loss_list)
-                            while count_sl < sl_length:
-                                stop_loss = stop_loss_list[count_sl]
-                                if stop_loss['price'] < coin_2_price:
-                                    _, coin_2_sl_price = _market.transaction_at_moment(0, e['position_time'])
-                                    coin_1_sl_quantity = stop_loss['quantity'] / coin_2_sl_price
-                                    _wallet.sell_coin_2(coin_1_sl_quantity, stop_loss['quantity'])
-                                    stop_loss_list.pop(count_sl)
-                                    sl_length -= 1
-                                count_sl += 1
-                                
-                        total_earn = _wallet.get_total_balance_in_coin1(_market.get_last_price())
-                        individual.set_score(total_earn/_initial_amount)
-                        population_length -= 1  
-                population.breed()
-                population.calculate_population_score()
-                print("++++++++++++++++++++++GEN {}++++++++++++++++++++++".format(gen))
-                print(population.score, population.get_best_individual_constants())
-            populations_length -= 1
             
-    def optimized_fit_function(self, _data):
-        pass
+    @cuda.jit
+    def evolution(self, _market, _initial_amount, _evaluation_intervals, _generations):
+        populations = self.populations
+        for gen in range(_generations):
+            t = Pool(processes=12)
+            data = []
+            for population in self.populations:
+                data.append(
+                    {
+                        'market': _market,
+                        'initial_amount': _initial_amount,
+                        'evaluation_intervals': _evaluation_intervals,
+                        'generations': _generations,
+                        'population': population
+                    }
+                )
+            self.individual_relevant_info = gen == _generations - 1
+            populations = t.map(self.optimized_population_function, data)
+            t.close() 
+            
+            print("++++++++++++++Poblaciones gen: {}/{}+++++++++++++++++".format(gen, _generations))
+            print(self.get_greatest_individual())
+            
+            if gen < _generations - 1:       
+                self._combine_populations(_old_populations=populations)
+                
+            self.populations = populations
+                
+        return self.get_greatest_individual()
+            
+    def get_greatest_individual(self):
+        self.__order_by_population_score()
+        best = self.populations[-1]
+        constants = best.get_best_individual_constants()
+        score = best.get_best_individual_score()
+        operations = best.get_best_individual_operarions()
+        return score, constants, operations
+        
+            
+    def __order_by_population_score(self):
+        self.populations.sort(key=lambda population: population.score)
+            
+    def _combine_populations(self, _old_populations):
+        all_populations_individuals = []
+        for population in _old_populations:
+            all_populations_individuals.extend(
+                population.get_best_twenty_percent_individuals()
+            )
+        for _ in range(self.populations_quantity):
+            self.populations = []
+            self.populations.append(
+                Population(
+                    _quantity=random.randint(self.population_min, self.population_max),
+                    _encoded_variables_quantity=self.individual_encoded_variables_quantity,
+                    _dna_length=self.individual_dna_length,
+                    _mutation_intensity=self.individual_muatition_intensity,
+                    _min_cod_ind_value=self.min_ag_dna_val,
+                    _max_cod_ind_value=self.max_ag_dna_val,
+                    _population_origin=all_populations_individuals
+                )
+            )
+        
+        
+            
+    def optimized_population_function(self, _data):
+        market = _data['market']
+        initial_amount = _data['initial_amount']
+        evaluation_intervals = _data['evaluation_intervals']
+        generations = _data['generations']
+        population = _data['population']
+        
+        for _ in range(generations):
+            population_length = population.quantity - 1
+            while population_length >= 0:
+                individual = population.population[population_length]
+                evaluation = self.__evaluate(individual, evaluation_intervals)
+                
+                _wallet= SimulateBasicWallet()
+                _wallet.deposit_coin_1(initial_amount)
+                for e in evaluation:
+                    if e["buy"]:
+                        coin_1_quantity = _wallet.get_balance_in_coin1() 
+                        if coin_1_quantity > 10:
+                            coin_2_quantity, coin_2_price = market.transaction_at_moment_buy_coin2(coin_1_quantity, e['position_time'])
+                            _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity)
+                            if self.individual_relevant_info:
+                                individual.add_relevant_info({
+                                    'coin_1_sell_quantity': coin_1_quantity,
+                                    'coin_2_buy_quantity': coin_2_quantity,
+                                    'coin_2_buy_price': coin_2_price,
+                                    'position_time': e['position_time']
+                                })
+                    if e["sell"]:
+                        coin_2_quantity = _wallet.get_balance_in_coin2() 
+                        if coin_2_quantity > 0:
+                            coin_1_quantity, coin_2_price = market.transaction_at_moment_sell_coin2(coin_2_quantity, e['position_time'])
+                            _wallet.sell_coin_2(coin_1_quantity, coin_2_quantity)
+                            if self.individual_relevant_info:
+                                individual.add_relevant_info({
+                                    'coin_1_buy_quantity': coin_1_quantity,
+                                    'coin_2_sell_quantity': coin_2_quantity,
+                                    'coin_2_sell_price': coin_2_price,
+                                    'position_time': e['position_time']
+                                })
+                        
+                    total_earn = _wallet.get_total_balance_in_coin1(market.get_last_price())
+                    score = total_earn if total_earn != initial_amount else 0
+                    individual.set_score(score)
+                    population_length -= 1  
+            population.breed()
+            population.calculate_population_score()
+        return population
             
     def __evaluate(self, individual, _evaluation_intervals):
         ag_variables = individual.decode_dna_variables_to_decimal()
@@ -293,7 +415,8 @@ class GeneticAlgorithm:
                     {
                         'position_time': le + 1,
                         'regresion_plus_1_val': regresion_plus_1_val,
-                        'percent_to_buy': self.__buy(regresion_plus_1_val)
+                        'buy': self.__buy_condition(regresion_plus_1_val),
+                        'sell': self.__sell_condition(regresion_plus_1_val)
                     }
                 )
         return to_test_2
@@ -319,7 +442,10 @@ class GeneticAlgorithm:
         return ne if self.__buy_condition(ne) else 0       
         
     def __buy_condition(self, _value):
-        return _value > 0
+        return self.__normalize_evaluated(_value) > 0.1
+    
+    def __sell_condition(self, _value):
+        return self.__normalize_evaluated(_value) < -0.1
         
     def __function(self, to_eval):
         lambdas = []
