@@ -25,6 +25,8 @@ class Graphic:
         self.indicators = []
         self.maxs_columns = []
         self.mins_columns = []
+        self.exclude_to_ag = ["open", "high", "low", "close", "volume"]
+        self.graph_ag = []
         
     def process_data(self):
         
@@ -65,6 +67,7 @@ class Graphic:
     def calculate_moving_average(self, _periods):
         self.processed_data['ma_{}'.format(_periods)] = self.processed_data.rolling(window=_periods)['low'].mean()
         self.indicators.append('ma_{}'.format(_periods))
+        self.exclude_to_ag.append('ma_{}'.format(_periods))
         
     def calculate_exponential_moving_average(self, _periods):
         pass
@@ -77,6 +80,7 @@ class Graphic:
             min = self.processed_data['low'].min() 
             self.processed_data['fr_{}'.format(count)] = [min + fb * (max - min) for _ in self.raw_data]
             self.indicators.append('fr_{}'.format(count))
+            self.exclude_to_ag.append('fr_{}'.format(count))
             count += 1
             
     def calculate_bollinger_bands(self):
@@ -134,6 +138,7 @@ class Graphic:
     def get_normalized_processed_data(self):
         df = self.processed_data.copy()
         result = self.processed_data.copy()
+        df.drop(columns=self.exclude_to_ag)
         for feature_name in df.columns:
             max_value = df[feature_name].max()
             min_value = df[feature_name].min()
@@ -191,3 +196,48 @@ class Graphic:
             ylim=(0, self.processed_data['high'].max()*1.7),
             addplot=subplots
         ) 
+        
+    def graph_for_ag(self):
+        subplots = []
+        for i in self.graph_ag:
+            if "sells" in i:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='scatter',
+                        markersize=10,
+                        marker='v'
+                    )
+                )
+            elif "buys" in i:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='scatter',
+                        markersize=10,
+                        marker='^'
+                    )
+                )
+
+        fplt.plot(
+            self.processed_data,
+            type='candle',
+            style='charles',
+            title=self.pair,
+            ylabel='Price ($)',
+            volume=True,
+            ylabel_lower='Shares\nTraded',
+            addplot=subplots
+        ) 
+                
+    def process_data_received_ag(self, data):
+        buys = [None for _ in range(self.length)]
+        sells = [None for _ in range(self.length)]
+        for d in data:
+            if 'coin_1_sell_quantity' in d:
+                buys[d['position_time']] = d['coin_2_buy_price']
+            elif 'coin_1_buy_quantity' in d:
+                sells[d['position_time']] = d['coin_2_sell_price']
+        self.processed_data['buys'] = buys
+        self.processed_data['sells'] = sells
+        self.graph_ag.extend(["sells", "buys"])
