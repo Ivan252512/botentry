@@ -40,27 +40,27 @@ class BTCBUSDTraderBot(TraderBot):
         
         # Market info
         self.market = SimulateMarket(
-            _data=data,
-            _price_column='low'
+            _data=data
         )
         
         # AG codification
         self.ag = GeneticAlgorithm(
             _populations_quantity=12, 
             _population_min=20, 
-            _population_max=50, 
+            _population_max=100, 
             _individual_dna_length=16, 
             _individual_encoded_variables_quantity=len(environment[0]),
             _individual_muatition_intensity=8,
-            _min_cod_ind_value=-1000,
-            _max_cod_ind_value=1000,
+            _min_cod_ind_value=-10000,
+            _max_cod_ind_value=10000,
             _environment=environment,
         )
         eval = self.ag.evolution(
             _market=self.market, 
             _initial_amount=5000, 
             _evaluation_intervals=4, 
-            _generations=2
+            _generations_pob=2,
+            _generations_ind=4
         )
         
         trader.graphic.process_data_received_ag(eval[2])

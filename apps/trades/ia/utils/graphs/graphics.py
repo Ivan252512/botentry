@@ -10,6 +10,8 @@ from scipy.stats import linregress
 
 from apps.trades.binance.client import Client
 
+import traceback
+
 # https://www.geeksforgeeks.org/plot-candlestick-chart-using-mplfinance-module-in-python/
 # https://coderzcolumn.com/tutorials/data-science/candlestick-chart-in-python-mplfinance-plotly-bokeh
 
@@ -205,8 +207,10 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=10,
-                        marker='v'
+                        markersize=40,
+                        marker='v',
+                        color="green"
+                        
                     )
                 )
             elif "buys" in i:
@@ -214,10 +218,22 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=10,
-                        marker='^'
+                        markersize=40,
+                        marker='^',
+                        color="red"
                     )
                 )
+            elif "stop_loss" in i:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='scatter',
+                        markersize=2,
+                        marker='*',
+                        color="blue"
+                    )
+                )
+
 
         fplt.plot(
             self.processed_data,
@@ -233,11 +249,28 @@ class Graphic:
     def process_data_received_ag(self, data):
         buys = [None for _ in range(self.length)]
         sells = [None for _ in range(self.length)]
+        count_sl = 0
         for d in data:
-            if 'coin_1_sell_quantity' in d:
-                buys[d['position_time']] = d['coin_2_buy_price']
-            elif 'coin_1_buy_quantity' in d:
-                sells[d['position_time']] = d['coin_2_sell_price']
+            if d['position_time'] < self.length:
+                if 'coin_1_sell_quantity' in d:
+                    buys[d['position_time']] = d['coin_2_buy_price']
+                    stop_loss = [None for _ in range(self.length)]
+                    count = 0
+                    for sl in d['stop_loss']:
+                        if d['position_time'] + count < self.length:
+                            stop_loss[d['position_time'] + count] = sl
+                        count += 1
+                    self.processed_data['stop_loss_{}'.format(count_sl)] = stop_loss
+                    self.graph_ag.append('stop_loss_{}'.format(count_sl))
+                    count_sl += 1
+                elif 'coin_1_buy_quantity' in d:
+                    sells[d['position_time']] = d['coin_2_sell_price']
+            else:
+                operacion = "Comprar" if 'coin_1_sell_quantity' else "Vender"
+                print("OPERACION: {}".format(operacion))
+
+                
         self.processed_data['buys'] = buys
         self.processed_data['sells'] = sells
         self.graph_ag.extend(["sells", "buys"])
+        print(self.processed_data)

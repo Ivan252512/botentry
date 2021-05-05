@@ -20,4 +20,4 @@ class BTCBUSDTraderBotCase(TestCase):
         )
                  
     def test_eval_function_with_genetic_algorithm(self):
-        self.trader_bot.eval_function_with_genetic_algorithm('5m')
+        self.trader_bot.eval_function_with_genetic_algorithm('1h')
