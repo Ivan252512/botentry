@@ -11,12 +11,13 @@ from apps.trades.ia.utils.utils import (
 
 
 class TraderBot(object):
-    def __init__(self):
+    def __init__(self, _principal_trade_period):
         self.money = 0
         self.market = None
         self.periods = ['15m', '1h', '4h', '1d']
         self.trader_class = None
         self.traders_per_period = []
+        self.principal_trade_period =_principal_trade_period
         
         
     def eval_function_with_genetic_algorithm(self):
@@ -27,48 +28,61 @@ class TraderBot(object):
                 )
                 trader.prepare_data(_graphic=False)
                 data = trader.graphic.get_processed_data()
-                data_normalized = trader.graphic.get_normalized_processed_data()
-                environment = data_normalized.values.tolist()
-                
-                # Market info
-                self.market = SimulateMarket(
-                    _data=data
-                )
-                
-                # AG codification
-                self.ag = GeneticAlgorithm(
-                    _populations_quantity=12, 
-                    _population_min=20, 
-                    _population_max=100, 
-                    _individual_dna_length=16, 
-                    _individual_encoded_variables_quantity=len(environment[0]),
-                    _individual_muatition_intensity=8,
-                    _min_cod_ind_value=-10000,
-                    _max_cod_ind_value=10000,
-                    _environment=environment,
-                )
-                eval = self.ag.evolution(
-                    _market=self.market, 
-                    _initial_amount=self.money, 
-                    _evaluation_intervals=4, 
-                    _generations_pob=2,
-                    _generations_ind=4
-                )
-                
-                trader.graphic.process_data_received_ag(eval[2])
+                ag = {}
+                if p == self.principal_trade_period:
+                    data_normalized = trader.graphic.get_normalized_processed_data()
+                    environment = data_normalized.values.tolist()
+                    
+                    # Market info
+                    self.market = SimulateMarket(
+                        _data=data
+                    )
+                    
+                    # AG codification
+                    self.ag = GeneticAlgorithm(
+                        _populations_quantity=12, 
+                        _population_min=20, 
+                        _population_max=100, 
+                        _individual_dna_length=16, 
+                        _individual_encoded_variables_quantity=len(environment[0]),
+                        _individual_muatition_intensity=8,
+                        _min_cod_ind_value=-10000,
+                        _max_cod_ind_value=10000,
+                        _environment=environment,
+                    )
+                    score, constants, operations = self.ag.evolution(
+                        _market=self.market, 
+                        _initial_amount=self.money, 
+                        _evaluation_intervals=4, 
+                        _generations_pob=2,
+                        _generations_ind=4
+                    )
+                    
+                    last_operation = trader.graphic.process_data_received_ag(operations)
+                    
+                    ag = {
+                        'score': score,
+                        'constants': constants,
+                        'operations': operations,
+                        'last_operation': last_operation
+                    }
+
                 self.traders_per_period.append(
                     {
                         'period': p,
-                        'trader': trader
+                        'trader': trader,
+                        'ag': ag
                     }
                 )
     def graph_data(self):
         for t in self.traders_per_period:
-            t['trader'].graphic.graph_for_ag()
+            if t['ag']:
+                t['trader'].graphic.graph_for_ag(self.money, t['ag']['score'], t['ag']['last_operation'])
+            t['trader'].graphic.graph()   
         
 class BTCBUSDTraderBot(TraderBot):
-    def __init__(self, *args, **kwargs):
-        super().__init__()
+    def __init__(self, _principal_trade_period, *args, **kwargs):
+        super().__init__(_principal_trade_period, *args, **kwargs)
         self.money = 5000 
         self.trader_class = TraderBTCBUSD
 

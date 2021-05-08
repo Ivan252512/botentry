@@ -33,6 +33,7 @@ class Graphic:
         self.mins_columns = []
         self.exclude_to_ag = ["open", "high", "low", "close", "volume"]
         self.graph_ag = []
+        self.not_to_graph_indicators = []
         
     def process_data(self):
         
@@ -101,43 +102,53 @@ class Graphic:
         filtered_data_low = gaussian_filter1d(self.processed_data['low'], _sigma_gaussian_filter)
         filtered_data_high = gaussian_filter1d(self.processed_data['high'], _sigma_gaussian_filter)
         self.processed_data['fd_low_{}'.format(_sigma_gaussian_filter)] = filtered_data_low
+        self.not_to_graph_indicators.append('fd_low_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('fd_low_{}'.format(_sigma_gaussian_filter))
+        self.exclude_to_ag.append('fd_low_{}'.format(_sigma_gaussian_filter))
         self.processed_data['d2_low_{}'.format(_sigma_gaussian_filter)] = np.gradient(np.gradient(filtered_data_low))
+        self.not_to_graph_indicators.append('d2_low_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('d2_low_{}'.format(_sigma_gaussian_filter))
+        self.exclude_to_ag.append('d2_low_{}'.format(_sigma_gaussian_filter))
         self.processed_data['fd_high_{}'.format(_sigma_gaussian_filter)] = filtered_data_high
+        self.not_to_graph_indicators.append('fd_high_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('fd_high_{}'.format(_sigma_gaussian_filter))
+        self.exclude_to_ag.append('fd_high_{}'.format(_sigma_gaussian_filter))
         self.processed_data['d2_high_{}'.format(_sigma_gaussian_filter)] = np.gradient(np.gradient(filtered_data_high))
+        self.not_to_graph_indicators.append('d2_high_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('d2_high_{}'.format(_sigma_gaussian_filter))
-        #self._put_min_respectly_in_data_df('low', 'd2_low_{}'.format(_sigma_gaussian_filter), _sigma_gaussian_filter)
-        #self._put_max_respectly_in_data_df('high', 'd2_high_{}'.format(_sigma_gaussian_filter),_sigma_gaussian_filter)
+        self.exclude_to_ag.append('d2_high_{}'.format(_sigma_gaussian_filter))
+        self._put_min_respectly_in_data_df('low', 'd2_low_{}'.format(_sigma_gaussian_filter), _sigma_gaussian_filter)
+        self._put_max_respectly_in_data_df('high', 'd2_high_{}'.format(_sigma_gaussian_filter),_sigma_gaussian_filter)
         
     def _put_min_respectly_in_data_df(self, _df, _df2, _sigma_gaussian_filter):
         df = self.processed_data
         self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)] = df[_df][(df[_df2].shift(1) < df[_df2]) & (df[_df2].shift(-1) < df[_df2])]
         self.indicators.append('min_correspondent_{}_{}'.format(_df, _df2))
+        self.exclude_to_ag.append('min_correspondent_{}_{}'.format(_df, _df2))
         
-        dates_intervals = np.array([i for i in range(self.length)])
-        mask = ~np.isnan(dates_intervals[400:]) & ~np.isnan(self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)][400:])        
-        reg = linregress(
-            x=dates_intervals[400:][mask],
-            y=self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)][400:][mask]
-        )
-        self.processed_data['reg_mn_correspondent_{}_{}'.format(_df ,_df2)] = reg[0] * dates_intervals + reg[1]
-        self.indicators.append('reg_mn_correspondent_{}_{}'.format(_df ,_df2))
+        # dates_intervals = np.array([i for i in range(self.length)])
+        # mask = ~np.isnan(dates_intervals[400:]) & ~np.isnan(self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)][400:])        
+        # reg = linregress(
+        #     x=dates_intervals[400:][mask],
+        #     y=self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)][400:][mask]
+        # )
+        # self.processed_data['reg_mn_correspondent_{}_{}'.format(_df ,_df2)] = reg[0] * dates_intervals + reg[1]
+        # self.indicators.append('reg_mn_correspondent_{}_{}'.format(_df ,_df2))
     
     def _put_max_respectly_in_data_df(self, _df, _df2, _sigma_gaussian_filter):
         df = self.processed_data
         self.processed_data['max_correspondent_{}_{}'.format(_df, _df2)] = df[_df][(df[_df2].shift(1) > df[_df2]) & (df[_df2].shift(-1) > df[_df2])]
         self.indicators.append('max_correspondent_{}_{}'.format(_df, _df2))
+        self.exclude_to_ag.append('max_correspondent_{}_{}'.format(_df, _df2))
 
-        dates_intervals = np.array([i for i in range(self.length)])
-        mask = ~np.isnan(dates_intervals[400:]) & ~np.isnan(self.processed_data['max_correspondent_{}_{}'.format(_df ,_df2)][400:])        
-        reg = linregress(
-            x=dates_intervals[400:][mask],
-            y=self.processed_data['max_correspondent_{}_{}'.format(_df ,_df2)][400:][mask]
-        )
-        self.processed_data['reg_mx_correspondent_{}_{}'.format(_df ,_df2)] = reg[0] * dates_intervals + reg[1]
-        self.indicators.append('reg_mx_correspondent_{}_{}'.format(_df ,_df2))
+        # dates_intervals = np.array([i for i in range(self.length)])
+        # mask = ~np.isnan(dates_intervals[400:]) & ~np.isnan(self.processed_data['max_correspondent_{}_{}'.format(_df ,_df2)][400:])        
+        # reg = linregress(
+        #     x=dates_intervals[400:][mask],
+        #     y=self.processed_data['max_correspondent_{}_{}'.format(_df ,_df2)][400:][mask]
+        # )
+        # self.processed_data['reg_mx_correspondent_{}_{}'.format(_df ,_df2)] = reg[0] * dates_intervals + reg[1]
+        # self.indicators.append('reg_mx_correspondent_{}_{}'.format(_df ,_df2))
         
     def get_processed_data(self):
         return self.processed_data.copy()
@@ -164,33 +175,42 @@ class Graphic:
         count_max = 1
         count_min = 1
         for i in self.indicators:
-            if "max" in i:
-                subplots.append(
-                    fplt.make_addplot(
-                        self.processed_data[i],
-                        type='scatter',
-                        markersize=50 * count_max,
-                        marker='v'
+            if i not in self.not_to_graph_indicators:
+                if "max" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=50 * count_max,
+                            marker='v'
+                        )
                     )
-                )
-                count_max += 1
-            elif "min" in i:
-                subplots.append(
-                    fplt.make_addplot(
-                        self.processed_data[i],
-                        type='scatter',
-                        markersize=50 * count_min,
-                        marker='^'
+                    count_max += 1
+                elif "min" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=50 * count_min,
+                            marker='^'
+                        )
                     )
-                )
-                count_min += 1
-            else:
-                subplots.append(
-                    fplt.make_addplot(
-                        self.processed_data[i],
-                        type='line',
+                    count_min += 1
+                else:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='line',
+                        )
                     )
-                )
+                
+        Path(
+            "graphics/{}/{}/pd/".format(
+                self.pair,
+                self.trading_interval
+            )
+        ).mkdir(parents=True, exist_ok=True)
+        current_date = datetime.datetime.now()
 
         fplt.plot(
             self.processed_data,
@@ -201,10 +221,15 @@ class Graphic:
             volume=True,
             ylabel_lower='Shares\nTraded',
             ylim=(0, self.processed_data['high'].max()*1.7),
-            addplot=subplots
+            addplot=subplots,
+            savefig="graphics/{}/{}/pd/{}.png".format(
+                self.pair,
+                self.trading_interval,
+                current_date.strftime("%m_%d_%Y_%H_%M_%S")
+            )
         ) 
         
-    def graph_for_ag(self):
+    def graph_for_ag(self, _initial, _score, _last_operation):
         subplots = []
         for i in self.graph_ag:
             if "sells" in i:
@@ -248,7 +273,7 @@ class Graphic:
 
         current_date = datetime.datetime.now()
         Path(
-            "graphics/{}/{}/".format(
+            "graphics/{}/{}/ag/".format(
                 self.pair,
                 self.trading_interval
             )
@@ -258,12 +283,12 @@ class Graphic:
             self.processed_data,
             type='candle',
             style='charles',
-            title=self.pair,
+            title="{}_{}_{}_{}".format(self.pair, _initial, _score, _last_operation),
             ylabel='Price ($)',
             volume=True,
             ylabel_lower='Shares\nTraded',
             addplot=subplots,
-            savefig="graphics/{}/{}/{}.png".format(
+            savefig="graphics/{}/{}/ag/{}.png".format(
                 self.pair,
                 self.trading_interval,
                 current_date.strftime("%m_%d_%Y_%H_%M_%S")
@@ -289,11 +314,10 @@ class Graphic:
                     count_sl += 1
                 elif 'coin_1_buy_quantity' in d:
                     sells[d['position_time']] = d['coin_2_sell_price']
-            else:
-                operacion = "Comprar" if 'coin_1_sell_quantity' else "Vender"
-                print("OPERACION: {}".format(operacion))
-
                 
         self.processed_data['buys'] = buys
         self.processed_data['sells'] = sells
         self.graph_ag.extend(["sells", "buys"])
+        
+        operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
+        return operacion

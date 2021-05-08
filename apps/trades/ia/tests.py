@@ -15,7 +15,7 @@ class BTCBUSDTraderBotCase(TestCase):
         self.trader_bot = None
         
     def setUp(self):
-        self.trader_bot = BTCBUSDTraderBot()
+        self.trader_bot = BTCBUSDTraderBot(_principal_trade_period="15m")
                  
     def test_eval_function_with_genetic_algorithm(self):
         self.trader_bot.eval_function_with_genetic_algorithm()
