@@ -8,6 +8,9 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import linregress
 
+import datetime
+from pathlib import Path
+
 from apps.trades.binance.client import Client
 
 import traceback
@@ -17,9 +20,10 @@ import traceback
 
 class Graphic:
 
-    def __init__(self, _raw_data, _pair):
+    def __init__(self, _raw_data, _pair, _trading_interval):
         self.raw_data = _raw_data
         self.length = len(_raw_data)
+        self.trading_interval = _trading_interval
         self.pair = _pair
         self.processed_data = None
         self.ma = None 
@@ -70,6 +74,7 @@ class Graphic:
         self.processed_data['ma_{}'.format(_periods)] = self.processed_data.rolling(window=_periods)['low'].mean()
         self.indicators.append('ma_{}'.format(_periods))
         self.exclude_to_ag.append('ma_{}'.format(_periods))
+        self.graph_ag.append('ma_{}'.format(_periods))
         
     def calculate_exponential_moving_average(self, _periods):
         pass
@@ -82,7 +87,7 @@ class Graphic:
             min = self.processed_data['low'].min() 
             self.processed_data['fr_{}'.format(count)] = [min + fb * (max - min) for _ in self.raw_data]
             self.indicators.append('fr_{}'.format(count))
-            self.exclude_to_ag.append('fr_{}'.format(count))
+            self.graph_ag.append('fr_{}'.format(count))
             count += 1
             
     def calculate_bollinger_bands(self):
@@ -233,7 +238,21 @@ class Graphic:
                         color="blue"
                     )
                 )
+            else:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='line',
+                    )
+                )
 
+        current_date = datetime.datetime.now()
+        Path(
+            "graphics/{}/{}/".format(
+                self.pair,
+                self.trading_interval
+            )
+        ).mkdir(parents=True, exist_ok=True)
 
         fplt.plot(
             self.processed_data,
@@ -243,7 +262,12 @@ class Graphic:
             ylabel='Price ($)',
             volume=True,
             ylabel_lower='Shares\nTraded',
-            addplot=subplots
+            addplot=subplots,
+            savefig="graphics/{}/{}/{}.png".format(
+                self.pair,
+                self.trading_interval,
+                current_date.strftime("%m_%d_%Y_%H_%M_%S")
+            )
         ) 
                 
     def process_data_received_ag(self, data):
@@ -273,4 +297,3 @@ class Graphic:
         self.processed_data['buys'] = buys
         self.processed_data['sells'] = sells
         self.graph_ag.extend(["sells", "buys"])
-        print(self.processed_data)

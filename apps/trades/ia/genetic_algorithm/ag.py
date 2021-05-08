@@ -289,7 +289,7 @@ class GeneticAlgorithm:
     def evolution(self, _market, _initial_amount, _evaluation_intervals, _generations_pob, _generations_ind):
         populations = self.populations
         for gen in range(_generations_pob):
-            t = Pool(processes=1)
+            t = Pool(processes=12)
             data = []
             for population in self.populations:
                 data.append(
