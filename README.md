@@ -1,3 +1,4 @@
+![05_09_2021_12_48_05](https://user-images.githubusercontent.com/17793570/117582247-bb75ba00-b0c6-11eb-9969-0a81d75fa032.png)
 # botentry
 A binance day trading bot
 
