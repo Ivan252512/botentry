@@ -34,6 +34,7 @@ class Graphic:
         self.exclude_to_ag = ["open", "high", "low", "close", "volume"]
         self.graph_ag = []
         self.not_to_graph_indicators = []
+        self.fibos = [0, 0.236, 0.382, 0.500, 0.618, 0.786, 1, 1.618]
         
     def process_data(self):
         
@@ -81,9 +82,8 @@ class Graphic:
         pass
         
     def calculate_fibonacci_retracement(self):
-        fibo_levels = [0, 0.236, 0.382, 0.500, 0.618, 0.786, 1, 1.618]
         count = 1
-        for fb in fibo_levels:
+        for fb in self.fibos:
             max = self.processed_data['high'].max()
             min = self.processed_data['low'].min() 
             self.processed_data['fr_{}'.format(count)] = [min + fb * (max - min) for _ in self.raw_data]
@@ -122,9 +122,9 @@ class Graphic:
         
     def _put_min_respectly_in_data_df(self, _df, _df2, _sigma_gaussian_filter):
         df = self.processed_data
-        self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)] = df[_df][(df[_df2].shift(1) < df[_df2]) & (df[_df2].shift(-1) < df[_df2])]
-        self.indicators.append('min_correspondent_{}_{}'.format(_df, _df2))
-        self.exclude_to_ag.append('min_correspondent_{}_{}'.format(_df, _df2))
+        self.processed_data['min'] = df[_df][(df[_df2].shift(1) < df[_df2]) & (df[_df2].shift(-1) < df[_df2])]
+        self.indicators.append('min')
+        self.exclude_to_ag.append('min')
         
         # dates_intervals = np.array([i for i in range(self.length)])
         # mask = ~np.isnan(dates_intervals[400:]) & ~np.isnan(self.processed_data['min_correspondent_{}_{}'.format(_df ,_df2)][400:])        
@@ -137,9 +137,9 @@ class Graphic:
     
     def _put_max_respectly_in_data_df(self, _df, _df2, _sigma_gaussian_filter):
         df = self.processed_data
-        self.processed_data['max_correspondent_{}_{}'.format(_df, _df2)] = df[_df][(df[_df2].shift(1) > df[_df2]) & (df[_df2].shift(-1) > df[_df2])]
-        self.indicators.append('max_correspondent_{}_{}'.format(_df, _df2))
-        self.exclude_to_ag.append('max_correspondent_{}_{}'.format(_df, _df2))
+        self.processed_data['max'] = df[_df][(df[_df2].shift(1) > df[_df2]) & (df[_df2].shift(-1) > df[_df2])]
+        self.indicators.append('max')
+        self.exclude_to_ag.append('max')
 
         # dates_intervals = np.array([i for i in range(self.length)])
         # mask = ~np.isnan(dates_intervals[400:]) & ~np.isnan(self.processed_data['max_correspondent_{}_{}'.format(_df ,_df2)][400:])        
@@ -181,7 +181,7 @@ class Graphic:
                         fplt.make_addplot(
                             self.processed_data[i],
                             type='scatter',
-                            markersize=50 * count_max,
+                            markersize=15,
                             marker='v'
                         )
                     )
@@ -191,7 +191,7 @@ class Graphic:
                         fplt.make_addplot(
                             self.processed_data[i],
                             type='scatter',
-                            markersize=50 * count_min,
+                            markersize=15,
                             marker='^'
                         )
                     )
@@ -211,6 +211,14 @@ class Graphic:
             )
         ).mkdir(parents=True, exist_ok=True)
         current_date = datetime.datetime.now()
+        save= dict(
+            fname="graphics/{}/{}/pd/{}.png".format(
+                self.pair,
+                self.trading_interval,
+                current_date.strftime("%m_%d_%Y_%H_%M_%S")
+            ),
+            dpi=600,
+        )
 
         fplt.plot(
             self.processed_data,
@@ -220,13 +228,8 @@ class Graphic:
             ylabel='Price ($)',
             volume=True,
             ylabel_lower='Shares\nTraded',
-            ylim=(0, self.processed_data['high'].max()*1.7),
             addplot=subplots,
-            savefig="graphics/{}/{}/pd/{}.png".format(
-                self.pair,
-                self.trading_interval,
-                current_date.strftime("%m_%d_%Y_%H_%M_%S")
-            )
+            savefig=save
         ) 
         
     def graph_for_ag(self, _initial, _score, _last_operation):
@@ -237,7 +240,7 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=40,
+                        markersize=15,
                         marker='v',
                         color="green"
                         
@@ -248,7 +251,7 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=40,
+                        markersize=15,
                         marker='^',
                         color="red"
                     )
@@ -278,6 +281,14 @@ class Graphic:
                 self.trading_interval
             )
         ).mkdir(parents=True, exist_ok=True)
+        save= dict(
+            fname="graphics/{}/{}/ag/{}.png".format(
+                self.pair,
+                self.trading_interval,
+                current_date.strftime("%m_%d_%Y_%H_%M_%S")
+            ),
+            dpi=600,
+        )
 
         fplt.plot(
             self.processed_data,
@@ -288,11 +299,7 @@ class Graphic:
             volume=True,
             ylabel_lower='Shares\nTraded',
             addplot=subplots,
-            savefig="graphics/{}/{}/ag/{}.png".format(
-                self.pair,
-                self.trading_interval,
-                current_date.strftime("%m_%d_%Y_%H_%M_%S")
-            )
+            savefig=save
         ) 
                 
     def process_data_received_ag(self, data):
@@ -321,3 +328,24 @@ class Graphic:
         
         operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
         return operacion
+    
+    def get_last_ma_period(self, _period):
+        return self.processed_data['ma_{}'.format(_period)][-1]
+    
+    def get_fibos(self):
+        fibos = []
+        count = 1
+        for _ in self.fibos:
+            fibos.append(self.processed_data['fr_{}'.format(count)][-1])
+            count += 1
+        return fibos
+    
+    def get_last_min_info(self):
+        index = self.processed_data['min'].last_valid_index()
+        value = self.processed_data['min'][index]
+        return value, index
+    
+    def get_last_max_info(self):
+        index = self.processed_data['max'].last_valid_index()
+        value = self.processed_data['max'][index]
+        return value, index

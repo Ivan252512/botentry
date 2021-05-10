@@ -8,16 +8,24 @@ from apps.trades.ia.utils.utils import (
     SimulateMarket
 )
 
+from apps.trades.binance.client import Client
+
 
 
 class TraderBot(object):
     def __init__(self, _principal_trade_period):
         self.money = 0
+        self.stop_loss = 0
         self.market = None
         self.periods = ['15m', '1h', '4h', '1d']
         self.trader_class = None
         self.traders_per_period = []
         self.principal_trade_period =_principal_trade_period
+        self.info_to_invest = {}
+        self.client = Client()
+        self.pair = None
+        self.coin1 = None
+        self.coin2 = None
         
         
     def eval_function_with_genetic_algorithm(self):
@@ -40,9 +48,9 @@ class TraderBot(object):
                     
                     # AG codification
                     self.ag = GeneticAlgorithm(
-                        _populations_quantity=12, 
-                        _population_min=20, 
-                        _population_max=100, 
+                        _populations_quantity=24, 
+                        _population_min=50, 
+                        _population_max=250, 
                         _individual_dna_length=16, 
                         _individual_encoded_variables_quantity=len(environment[0]),
                         _individual_muatition_intensity=8,
@@ -74,6 +82,185 @@ class TraderBot(object):
                         'ag': ag
                     }
                 )
+                
+    def set_info_to_invest(self):
+        info_15m = {}
+        info_1h = {}
+        info_4h = {}
+        info_1d = {}
+        for p in self.traders_per_period:
+            if p['period'] == "15m":
+                info_15m = p 
+            elif p['period'] == "1h":
+                info_1h = p 
+            elif p['period'] == "4h":
+                info_4h = p 
+            elif p['period'] == "1d":
+                info_1d = p 
+        # Important variables
+        ag_order = ""
+        ag_profit = 0
+        relevant_info = {
+            "ma_7": 0,
+            "ma_25": 0,
+            "ma_99": 0,
+            "fb_023": 0,
+            "fb_038": 0,
+            "fb_050": 0,
+            "fb_061": 0,
+            "fb_078": 0,
+            "fb_100": 0,
+            "fb_161": 0,
+            "last_min_date": None,
+            "last_min": None,
+            "last_max_date": None,
+            "last_max": None,
+        }
+                
+        # 15m instructions
+        if 'ag' in info_15m and info_15m['ag']:
+            ag_order = info_15m['ag']['last_operation']
+            ag_profit = info_15m['ag']['score']
+        relevant_info_15m = relevant_info.copy()
+        relevant_info_15m["ma_7"] = info_15m['trader'].graphic.get_last_ma_period(7)
+        relevant_info_15m["ma_25"] = info_15m['trader'].graphic.get_last_ma_period(25)
+        relevant_info_15m["ma_99"] = info_15m['trader'].graphic.get_last_ma_period(99)
+        fibos = info_15m['trader'].graphic.get_fibos()
+        relevant_info_15m["fb_023"] = fibos[0]
+        relevant_info_15m["fb_038"] = fibos[1]
+        relevant_info_15m["fb_050"] = fibos[2]
+        relevant_info_15m["fb_061"] = fibos[3]
+        relevant_info_15m["fb_078"] = fibos[4]
+        relevant_info_15m["fb_100"] = fibos[5]
+        relevant_info_15m["fb_161"] = fibos[6]
+        min, min_index = info_15m['trader'].graphic.get_last_min_info()
+        relevant_info_15m["last_min_date"] = min_index
+        relevant_info_15m["last_min"] = min
+        max, max_index = info_15m['trader'].graphic.get_last_max_info()
+        relevant_info_15m["last_max_date"] = max_index
+        relevant_info_15m["last_max"] = max
+        # 1h instructions
+        if 'ag' in info_1h and info_1h['ag']:
+            ag_order = info_1h['ag']['last_operation']
+            ag_profit = info_1h['ag']['score']
+        relevant_info_1h = relevant_info.copy()
+        relevant_info_1h["ma_7"] = info_1h['trader'].graphic.get_last_ma_period(7)
+        relevant_info_1h["ma_25"] = info_1h['trader'].graphic.get_last_ma_period(25)
+        relevant_info_1h["ma_99"] = info_1h['trader'].graphic.get_last_ma_period(99)
+        fibos = info_1h['trader'].graphic.get_fibos()
+        relevant_info_1h["fb_023"] = fibos[0]
+        relevant_info_1h["fb_038"] = fibos[1]
+        relevant_info_1h["fb_050"] = fibos[2]
+        relevant_info_1h["fb_061"] = fibos[3]
+        relevant_info_1h["fb_078"] = fibos[4]
+        relevant_info_1h["fb_100"] = fibos[5]
+        relevant_info_1h["fb_161"] = fibos[6]
+        min, min_index = info_1h['trader'].graphic.get_last_min_info()
+        relevant_info_1h["last_min_date"] = min_index
+        relevant_info_1h["last_min"] = min
+        max, max_index = info_1h['trader'].graphic.get_last_max_info()
+        relevant_info_1h["last_max_date"] = max_index
+        relevant_info_1h["last_max"] = max
+        # 4h instructions
+        if 'ag' in info_4h and info_4h['ag']:
+            ag_order = info_4h['ag']['last_operation']
+            ag_profit = info_4h['ag']['score']
+        relevant_info_4h = relevant_info.copy()
+        relevant_info_4h["ma_7"] = info_4h['trader'].graphic.get_last_ma_period(7)
+        relevant_info_4h["ma_25"] = info_4h['trader'].graphic.get_last_ma_period(25)
+        relevant_info_4h["ma_99"] = info_4h['trader'].graphic.get_last_ma_period(99)
+        fibos = info_4h['trader'].graphic.get_fibos()
+        relevant_info_4h["fb_023"] = fibos[0]
+        relevant_info_4h["fb_038"] = fibos[1]
+        relevant_info_4h["fb_050"] = fibos[2]
+        relevant_info_4h["fb_061"] = fibos[3]
+        relevant_info_4h["fb_078"] = fibos[4]
+        relevant_info_4h["fb_100"] = fibos[5]
+        relevant_info_4h["fb_161"] = fibos[6]
+        min, min_index = info_4h['trader'].graphic.get_last_min_info()
+        relevant_info_4h["last_min_date"] = min_index
+        relevant_info_4h["last_min"] = min
+        max, max_index = info_4h['trader'].graphic.get_last_max_info()
+        relevant_info_4h["last_max_date"] = max_index
+        relevant_info_4h["last_max"] = max
+        # 1d instructions
+        if 'ag' in info_1d and info_1d['ag']:
+            ag_order = info_1d['ag']['last_operation']
+            ag_profit = info_1d['ag']['score']
+        relevant_info_1d = relevant_info.copy()
+        relevant_info_1d["ma_7"] = info_1d['trader'].graphic.get_last_ma_period(7)
+        relevant_info_1d["ma_25"] = info_1d['trader'].graphic.get_last_ma_period(25)
+        relevant_info_1d["ma_99"] = info_1d['trader'].graphic.get_last_ma_period(99)
+        fibos = info_1d['trader'].graphic.get_fibos()
+        relevant_info_1d["fb_023"] = fibos[0]
+        relevant_info_1d["fb_038"] = fibos[1]
+        relevant_info_1d["fb_050"] = fibos[2]
+        relevant_info_1d["fb_061"] = fibos[3]
+        relevant_info_1d["fb_078"] = fibos[4]
+        relevant_info_1d["fb_100"] = fibos[5]
+        relevant_info_1d["fb_161"] = fibos[6]
+        min, min_index = info_1d['trader'].graphic.get_last_min_info()
+        relevant_info_1d["last_min_date"] = min_index
+        relevant_info_1d["last_min"] = min
+        max, max_index = info_1d['trader'].graphic.get_last_max_info()
+        relevant_info_1d["last_max_date"] = max_index
+        relevant_info_1d["last_max"] = max
+    
+        self.info_to_invest = {
+            '15m': relevant_info_15m,
+            '1h': relevant_info_1h,
+            '4h': relevant_info_4h,
+            '1d': relevant_info_1d,
+            'ag_order': ag_order,
+            'ag_profi': ag_profit
+        }
+    
+        
+    def decision_15m(self):
+        info_15m = self.info_to_invest['15m']
+    
+    def decision_1h(self):
+        info_1h = self.info_to_invest['1h']
+    
+    def decision_4h(self):
+        info_4h = self.info_to_invest['4h']
+
+    def decision_1d(self):
+        info_1d = self.info_to_invest['1d']
+        
+    def set_money(self):
+        pass
+        
+    def buy(self):
+        pass
+    
+    def stop_loss_increment(self):
+        pass
+    
+    def get_all_orders(self):
+        return self.client.get_all_orders(
+            symbol=self.pair
+        )
+        
+    def get_open_orders(self):
+        return self.client.get_open_orders(
+            symbol=self.pair
+        )
+        
+    def get_coin1_balance(self):
+        return self.client.get_asset_balance(
+            asset=self.coin1
+        )
+        
+    def get_coin2_balance(self):
+        return self.client.get_asset_balance(
+            asset=self.coin2
+        )
+    
+    def get_order(self):
+        pass
+        
+                
     def graph_data(self):
         for t in self.traders_per_period:
             if t['ag']:
@@ -85,6 +272,9 @@ class BTCBUSDTraderBot(TraderBot):
         super().__init__(_principal_trade_period, *args, **kwargs)
         self.money = 5000 
         self.trader_class = TraderBTCBUSD
+        self.pair = "BTCBUSD"
+        self.coin1 = "BUSD"
+        self.coin2 = "BTC"
 
         
         

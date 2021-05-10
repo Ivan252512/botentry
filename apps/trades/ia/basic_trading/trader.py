@@ -41,6 +41,11 @@ class Trader:
             quantity=_quantity,
             price=_price,
         )
+    
+    def get_all_orders(self):
+        return self.client.get_all_orders(
+            symbol=self.pair
+        )
         
     def prepare_data(self, _graphic=True):
         klines = self.get_pair_klines_info()

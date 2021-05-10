@@ -465,7 +465,7 @@ class GeneticAlgorithm:
         return ne if self.__buy_condition(ne) else 0       
         
     def __buy_condition(self, _value):
-        return _value[0] > 0 and _value[1]<0
+        return _value[0] > 0.1 and _value[1] < 0.1 and _value[1] < 0
     
         
     def __function(self, to_eval):
