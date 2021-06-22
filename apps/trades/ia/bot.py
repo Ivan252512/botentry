@@ -53,20 +53,20 @@ class TraderBot(object):
                     # AG codification
                     self.ag = GeneticAlgorithm(
                         _populations_quantity=12, 
-                        _population_min=50, 
-                        _population_max=250, 
-                        _individual_dna_length=16, 
+                        _population_min=500, 
+                        _population_max=2500, 
+                        _individual_dna_length=32, 
                         _individual_encoded_variables_quantity=len(environment[0]),
-                        _individual_muatition_intensity=8,
+                        _individual_muatition_intensity=16,
                         _min_cod_ind_value=-10000,
                         _max_cod_ind_value=10000,
                         _environment=environment,
                     )
-                    score, constants, operations = self.ag.evolution(
+                    score, constants, operations = self.ag.evolution_individual_optimized(
                         _market=self.market, 
                         _initial_amount=self.money, 
                         _evaluation_intervals=4, 
-                        _generations_pob=2,
+                        _generations_pob=1,
                         _generations_ind=50
                     )
                     
