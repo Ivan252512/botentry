@@ -188,11 +188,6 @@ class Population:
                 )
             )
 
-        bests = []
-
-        for _ in range(8):
-            bests += best_ten_percent
-
         current_generation = best_ten_percent
         new_quantity = self.quantity - len(current_generation)
         while new_quantity > 0:
@@ -266,7 +261,7 @@ class GeneticAlgorithm:
                  _min_cod_ind_value,
                  _max_cod_ind_value,
                  _environment,
-                 _individual_relevant_info=False
+                 _individual_relevant_info=False,
                  ):
         self.populations = []
         self.populations_quantity = _populations_quantity
@@ -282,6 +277,7 @@ class GeneticAlgorithm:
         self.max_function_val = self.max_ag_dna_val * \
             self.individual_encoded_variables_quantity
         self.individual_relevant_info = _individual_relevant_info
+        self.evaluated = []
         for _ in range(self.populations_quantity):
             self.populations.append(
                 Population(
@@ -338,7 +334,7 @@ class GeneticAlgorithm:
                     }
                 )
             self.individual_relevant_info = gen == _generations_pob - 1
-            populations = list(map(self.optimized_population_function, data))
+            populations = list(map(self.optimized_population_and_individual_function, data))
 
             print(
                 "++++++++++++++Poblaciones gen: {}/{}+++++++++++++++++".format(gen, _generations_pob))
@@ -460,7 +456,7 @@ class GeneticAlgorithm:
         population = _data['population']
 
         for gen in range(generations):
-            t = Pool(processes=10)
+            t = Pool(processes=12)
             data = []
             for individual in population.population:
                 data.append(
@@ -471,7 +467,7 @@ class GeneticAlgorithm:
                         'individual': individual
                     }
                 )
-            individuals = t.map(self.optimized_population_and_individual_function, data)
+            individuals = t.map(self.optimized_individual_function, data)
             t.close()
             population.population = individuals
             score = population.calculate_population_score()
@@ -480,10 +476,16 @@ class GeneticAlgorithm:
         return population
 
     def optimized_individual_function(self, _data):
+        individual = _data['individual']
+        return individual
+        for old_ind in self.evaluated:
+            if old_ind["dna"] == individual.dna:
+                individual.set_score(old_ind["score"])
+                return individual
+        
         market = _data['market']
         initial_amount = _data['initial_amount']
         evaluation_intervals = _data['evaluation_intervals']
-        individual = _data['individual']
         sl_percent = 0.01
         sl_divisor_plus = 2
 
@@ -541,6 +543,10 @@ class GeneticAlgorithm:
                 market.get_last_price())
             score = total_earn if total_earn != initial_amount else -1
             individual.set_score(score)
+            self.evaluated.append({
+                "dna": individual.dna,
+                "score": individual.score
+            })
         return individual
 
     def __evaluate(self, individual, _evaluation_intervals):

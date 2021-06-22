@@ -15,7 +15,6 @@ from apps.trades.ia.utils.utils import (
 from apps.trades.binance.client import Client
 
 
-
 class TraderBot(object):
     def __init__(self, _principal_trade_period):
         self.stop_loss = 0
@@ -52,9 +51,9 @@ class TraderBot(object):
                     
                     # AG codification
                     self.ag = GeneticAlgorithm(
-                        _populations_quantity=12, 
-                        _population_min=500, 
-                        _population_max=2500, 
+                        _populations_quantity=1, 
+                        _population_min=1000, 
+                        _population_max=5000, 
                         _individual_dna_length=32, 
                         _individual_encoded_variables_quantity=len(environment[0]),
                         _individual_muatition_intensity=16,
