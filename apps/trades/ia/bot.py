@@ -1,5 +1,9 @@
 from apps.trades.ia.basic_trading.trader import (
-    TraderBTCBUSD
+    TraderBTCBUSD,
+    TraderETHBUSD,
+    TraderADABUSD,
+    TraderBNBBUSD,
+    TraderBUSDUSDT
 )
 
 from apps.trades.ia.genetic_algorithm.ag import GeneticAlgorithm
@@ -14,8 +18,8 @@ from apps.trades.binance.client import Client
 
 class TraderBot(object):
     def __init__(self, _principal_trade_period):
-        self.money = 0
         self.stop_loss = 0
+        self.money = 5000
         self.market = None
         self.periods = ['15m', '1h', '4h', '1d']
         self.trader_class = None
@@ -48,7 +52,7 @@ class TraderBot(object):
                     
                     # AG codification
                     self.ag = GeneticAlgorithm(
-                        _populations_quantity=24, 
+                        _populations_quantity=12, 
                         _population_min=50, 
                         _population_max=250, 
                         _individual_dna_length=16, 
@@ -63,7 +67,7 @@ class TraderBot(object):
                         _initial_amount=self.money, 
                         _evaluation_intervals=4, 
                         _generations_pob=2,
-                        _generations_ind=4
+                        _generations_ind=50
                     )
                     
                     last_operation = trader.graphic.process_data_received_ag(operations)
@@ -228,14 +232,31 @@ class TraderBot(object):
     def decision_1d(self):
         info_1d = self.info_to_invest['1d']
         
-    def set_money(self):
-        pass
+    def set_money(self, _money):
+        if float(self.get_coin1_balance()['free']) >= _money:
+            self.money = _money
+            return True
+        return False
         
     def buy(self):
-        pass
+        price = float(self.get_last_average_price()['price'])
+        buy = None
+        if price > 0:
+            quantity = self.money / price
+            buy = self.client.order_market_buy(
+                symbol=self.pair,
+                quantity=quantity,
+            )
+        self.money = 0
+        return buy
     
     def stop_loss_increment(self):
         pass
+    
+    def get_last_average_price(self):
+        return self.client.get_avg_price(
+            symbol=self.pair
+        )
     
     def get_all_orders(self):
         return self.client.get_all_orders(
@@ -257,8 +278,11 @@ class TraderBot(object):
             asset=self.coin2
         )
     
-    def get_order(self):
-        pass
+    def get_order(self, _order_id):
+        return self.client.get_order(
+            symbol=self.pair,
+            orderId=_order_id
+        )
         
                 
     def graph_data(self):
@@ -270,11 +294,35 @@ class TraderBot(object):
 class BTCBUSDTraderBot(TraderBot):
     def __init__(self, _principal_trade_period, *args, **kwargs):
         super().__init__(_principal_trade_period, *args, **kwargs)
-        self.money = 5000 
         self.trader_class = TraderBTCBUSD
         self.pair = "BTCBUSD"
         self.coin1 = "BUSD"
         self.coin2 = "BTC"
+
+
+class ETHBUSDTraderBot(TraderBot):
+    def __init__(self, _principal_trade_period, *args, **kwargs):
+        super().__init__(_principal_trade_period, *args, **kwargs)
+        self.trader_class = TraderETHBUSD
+        self.pair = "ETHBUSD"
+        self.coin1 = "BUSD"
+        self.coin2 = "ETH"
+        
+class ADABUSDTraderBot(TraderBot):
+    def __init__(self, _principal_trade_period, *args, **kwargs):
+        super().__init__(_principal_trade_period, *args, **kwargs)
+        self.trader_class = TraderADABUSD
+        self.pair = "ETHBUSD"
+        self.coin1 = "BUSD"
+        self.coin2 = "ETH"
+        
+class BNBBUSDTraderBot(TraderBot):
+    def __init__(self, _principal_trade_period, *args, **kwargs):
+        super().__init__(_principal_trade_period, *args, **kwargs)
+        self.trader_class = TraderBNBBUSD
+        self.pair = "ETHBUSD"
+        self.coin1 = "BUSD"
+        self.coin2 = "ETH"
 
         
         

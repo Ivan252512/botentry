@@ -23,11 +23,11 @@ class Individual:
                  _dna=None
         ):
         self.length = _length
-        self.encencoded_variables_quantity = _encoded_variables_quantity
+        self.encoded_variables_quantity = _encoded_variables_quantity
         self.mutation_intensity = _mutation_intensity
         self.dna = _dna if _dna else self.generate_individual(
             self.length,
-            self.encencoded_variables_quantity
+            self.encoded_variables_quantity
         ) 
         self.score = 0
         self.min_value = _min_value
@@ -36,7 +36,7 @@ class Individual:
         
     @staticmethod
     @jit(nopython=True)
-    def generate_individual(length, encencoded_variables_quantity):
+    def generate_individual(length, encoded_variables_quantity):
         """Generate n bits strings individual
         
         :param nbits: String length simulating the bits quantity
@@ -45,7 +45,7 @@ class Individual:
         """ 
         count = 0
         individual = ""
-        all_dna_length = length * encencoded_variables_quantity
+        all_dna_length = length * encoded_variables_quantity
         while(count<all_dna_length):
             individual += str(random.randint(0, 1))
             count += 1 
@@ -170,15 +170,15 @@ class Population:
         """
         self.__order_by_individual_score()
         half = int(self.quantity/2)
-        best_half = self.population[:half]
+        best_half = self.population[half:]
         ten_percent = int(self.quantity/10)
-        best_ten_percent = self.population[:ten_percent]
+        best_ten_percent = self.population[ten_percent:]
         
         
         new_population = []
         for _ in range(half * 2):
-            mother = best_ten_percent[random.randint(0, ten_percent - 1)].dna
-            father = best_half[random.randint(0, half - 1)].dna
+            mother = best_ten_percent[random.randint(0, ten_percent - 1)]
+            father = best_half[random.randint(0, half - 1)]
             new_population.append(
                 self.__cross_genes(
                     father,
@@ -186,11 +186,18 @@ class Population:
                 )
             )
             
+        bests = []
+        
+        for _ in range(8):
+            bests += best_ten_percent
+            
         current_generation = best_ten_percent
         new_quantity = self.quantity - len(current_generation)
         while new_quantity > 0:
             current_generation.append(new_population[new_quantity])
             new_quantity -= 1
+
+        self.population = current_generation
             
             
     def __order_by_individual_score(self):
@@ -199,19 +206,19 @@ class Population:
     
     def __cross_genes(self, father, mother):
         son_dna = ""
-        for i in range(self.dna_length):
+        for i in range(father.length * father.encoded_variables_quantity):
             rand=random.randint(0,1)
             if (rand==0):
-                son_dna += father[i]
+                son_dna += father.dna[i]
             else:
-                son_dna += mother[i]
+                son_dna += mother.dna[i]
         son = Individual(
-                _length=self.dna_length,
-                _encoded_variables_quantity=self.encoded_variables_quantity,
-                _mutation_intensity=self.mutation_intensity,
+                _length=father.length,
+                _encoded_variables_quantity=father.encoded_variables_quantity,
+                _mutation_intensity=father.mutation_intensity,
                 _dna=son_dna,
-                _min_value=self.min_cod_ind_value,
-                _max_value=self.max_cod_ind_value
+                _min_value=father.min_value,
+                _max_value=father.max_value
             )
         son.mutation()
         return son
@@ -289,7 +296,7 @@ class GeneticAlgorithm:
     def evolution(self, _market, _initial_amount, _evaluation_intervals, _generations_pob, _generations_ind):
         populations = self.populations
         for gen in range(_generations_pob):
-            t = Pool(processes=12)
+            t = Pool(processes=1)
             data = []
             for population in self.populations:
                 data.append(
@@ -311,8 +318,6 @@ class GeneticAlgorithm:
             
             if gen < _generations_pob - 1:       
                 self._new_populations(_old_populations=populations)
-                
-            self.populations = populations
                 
         return self.get_greatest_individual()
             
@@ -354,13 +359,12 @@ class GeneticAlgorithm:
         sl_percent = 0.01
         sl_divisor_plus = 2
         
-        for _ in range(generations):
+        for gen in range(generations):
             population_length = population.quantity - 1
             while population_length >= 0:
                 individual = population.population[population_length]
                 _wallet= SimulateBasicWallet()
                 _wallet.deposit_coin_1(initial_amount)
-                #print("lllllllllllllllllllllllllllllllllllllllllllllllll")
                 if individual.score == 0:
                     evaluation = self.__evaluate(individual, evaluation_intervals)
                     for e in evaluation:
@@ -408,9 +412,68 @@ class GeneticAlgorithm:
                     score = total_earn if total_earn != initial_amount else -1
                     individual.set_score(score)
                 population_length -= 1  
+            score = population.calculate_population_score()
+            print(f"Gen {gen} score: {score} ")
             population.breed()
-            population.calculate_population_score()
         return population
+            
+    def optimized_individual_function(self, _data):        
+        market = _data['market']
+        initial_amount = _data['initial_amount']
+        evaluation_intervals = _data['evaluation_intervals']
+        individual = _data['individual']
+        sl_percent = 0.01
+        sl_divisor_plus = 2
+        
+        _wallet= SimulateBasicWallet()
+        _wallet.deposit_coin_1(initial_amount)
+        if individual.score == 0:
+            evaluation = self.__evaluate(individual, evaluation_intervals)
+            for e in evaluation:
+                if e["buy"]:
+                    #print(e)
+                    coin_1_quantity = _wallet.get_balance_in_coin1() 
+                    if coin_1_quantity > 10:
+                        coin_2_quantity, coin_2_price = market.transaction_at_moment_buy_coin2(coin_1_quantity, e['position_time'])
+                        if _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity):
+                            individual.add_relevant_info({
+                                'coin_1_sell_quantity': coin_1_quantity,
+                                'coin_2_buy_quantity': coin_2_quantity,
+                                'coin_2_buy_price': coin_2_price,
+                                'position_time': e['position_time'],
+                                'balance_coin_1': _wallet.get_balance_in_coin1(),
+                                'balance_coin_2': _wallet.get_balance_in_coin2(),
+                                'stop_loss': [coin_2_price * (1 - sl_percent)]
+                            })
+                            #print("compra", individual.relevant_info)
+                if len(individual.relevant_info) > 0 and "coin_1_sell_quantity" in individual.relevant_info[-1]:
+                    _, coin_2_last_price_price = market.transaction_at_moment_sell_coin2(0, e['position_time'])
+                    sl = individual.relevant_info[-1]["stop_loss"][-1]
+                    if coin_2_last_price_price < sl:
+                        coin_2_quantity = _wallet.get_balance_in_coin2() 
+                        if coin_2_quantity > 0:
+                            coin_1_quantity_market, coin_2_price_market = market.transaction_at_moment_sell_coin2(coin_2_quantity, e['position_time'])
+                            coin_2_price_sl = individual.relevant_info[-1]["stop_loss"][-1]
+                            coin_1_quantity_sl = coin_2_price_sl * coin_2_quantity
+                            coin_2_price = coin_2_price_sl if coin_2_price_sl < coin_2_price_market else coin_2_price_market
+                            coin_1_quantity = coin_1_quantity_sl if coin_2_price_sl < coin_2_price_market else coin_1_quantity_market
+                            if _wallet.sell_coin_2(coin_1_quantity, coin_2_quantity): #self.individual_relevant_info:
+                                individual.add_relevant_info({
+                                    'coin_1_buy_quantity': coin_1_quantity,
+                                    'coin_2_sell_quantity': coin_2_quantity,
+                                    'coin_2_sell_price': coin_2_price,
+                                    'position_time': e['position_time'],
+                                    'balance_coin_1': _wallet.get_balance_in_coin1(),
+                                    'balance_coin_2': _wallet.get_balance_in_coin2() 
+                                })
+                                #print("vende: ", individual.relevant_info)
+                    else:
+                        individual.relevant_info[-1]["stop_loss"].append(individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_percent/sl_divisor_plus)))
+                        #print("aumenta stop loss: ", individual.relevant_info)
+            total_earn = _wallet.get_total_balance_in_coin1(market.get_last_price())
+            score = total_earn if total_earn != initial_amount else -1
+            individual.set_score(score)
+        return individual
             
     def __evaluate(self, individual, _evaluation_intervals):
         ag_variables = individual.decode_dna_variables_to_decimal()
