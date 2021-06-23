@@ -8,6 +8,10 @@ from apps.trades.ia.utils.utils import (
     SimulateBasicWallet,
 )
 
+from apps.trades.ia.utils.binary_tree import (
+    BinaryTree
+)
+
 from multiprocessing import Pool
 
 # Genetic algorithm
@@ -277,7 +281,7 @@ class GeneticAlgorithm:
         self.max_function_val = self.max_ag_dna_val * \
             self.individual_encoded_variables_quantity
         self.individual_relevant_info = _individual_relevant_info
-        self.evaluated = []
+        self.evaluated = BinaryTree(0, 0)
         for _ in range(self.populations_quantity):
             self.populations.append(
                 Population(
@@ -459,6 +463,9 @@ class GeneticAlgorithm:
             t = Pool(processes=12)
             data = []
             for individual in population.population:
+                exists_tree, val_tree = self.evaluated.search(individual.dna)
+                if exists_tree is not False and val_tree is not None:
+                    individual.score = val_tree
                 data.append(
                     {
                         'market': market,
@@ -469,6 +476,9 @@ class GeneticAlgorithm:
                 )
             individuals = t.map(self.optimized_individual_function, data)
             t.close()
+            for individual in individuals:
+                self.evaluated.insert(individual.dna, individual.score)
+            print("In memory data binary tree size: ", self.evaluated.size)
             population.population = individuals
             score = population.calculate_population_score()
             print(f"Gen {gen} score: {score} ")
@@ -476,13 +486,11 @@ class GeneticAlgorithm:
         return population
 
     def optimized_individual_function(self, _data):
-        individual = _data['individual']
-        return individual
-        for old_ind in self.evaluated:
-            if old_ind["dna"] == individual.dna:
-                individual.set_score(old_ind["score"])
-                return individual
+        individual = _data['individual']     
         
+        if individual.score != 0:
+            return individual
+          
         market = _data['market']
         initial_amount = _data['initial_amount']
         evaluation_intervals = _data['evaluation_intervals']
@@ -543,10 +551,6 @@ class GeneticAlgorithm:
                 market.get_last_price())
             score = total_earn if total_earn != initial_amount else -1
             individual.set_score(score)
-            self.evaluated.append({
-                "dna": individual.dna,
-                "score": individual.score
-            })
         return individual
 
     def __evaluate(self, individual, _evaluation_intervals):
