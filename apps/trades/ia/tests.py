@@ -23,7 +23,15 @@ class TraderBotCase:
     def test_general(self):
         # self.trader_bot.set_info_to_invest()
         self.trader_bot.eval_function_with_genetic_algorithm()
+        self.trader_bot.set_info_to_invest()
+        print(self.trader_bot.info_to_invest)
         self.trader_bot.graph_data()
+        
+        print("OPEN ORDERS")            
+        print(self.trader_bot.get_open_orders())
+        print(self.trader_bot.cancel_all_open_orders())
+        print(self.trader_bot.get_open_orders())
+
         
     # def test_get_all_orders(self):
     #     print("all_orders: ", self.trader_bot.get_all_orders())

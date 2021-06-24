@@ -340,10 +340,10 @@ class GeneticAlgorithm:
             self.individual_relevant_info = gen == _generations_pob - 1
             populations = list(map(self.optimized_population_and_individual_function, data))
 
-            print(
-                "++++++++++++++Poblaciones gen: {}/{}+++++++++++++++++".format(gen, _generations_pob))
+            # print(
+            #     "++++++++++++++Poblaciones gen: {}/{}+++++++++++++++++".format(gen, _generations_pob))
             self.populations = populations
-            print(self.get_greatest_individual())
+            # print(self.get_greatest_individual())
 
             if gen < _generations_pob - 1:
                 self._new_populations(_old_populations=populations)

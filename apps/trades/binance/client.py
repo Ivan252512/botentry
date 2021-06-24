@@ -1292,6 +1292,43 @@ class Client(object):
             'timeInForce': timeInForce
         })
         return self.create_order(**params)
+    
+    def order_limit_stop_loss(self, timeInForce=TIME_IN_FORCE_GTC, **params):
+        """Send in a new limit order
+
+        Any order with an icebergQty MUST have timeInForce set to GTC.
+
+        :param symbol: required
+        :type symbol: str
+        :param side: required
+        :type side: str
+        :param quantity: required
+        :type quantity: decimal
+        :param price: required
+        :type price: str
+        :param timeInForce: default Good till cancelled
+        :type timeInForce: str
+        :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+        :type newClientOrderId: str
+        :param icebergQty: Used with LIMIT, STOP_LOSS_LIMIT, and TAKE_PROFIT_LIMIT to create an iceberg order.
+        :type icebergQty: decimal
+        :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+        :type newOrderRespType: str
+        :param recvWindow: the number of milliseconds the request is valid for
+        :type recvWindow: int
+
+        :returns: API response
+
+        See order endpoint for full response options
+
+        :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+        """
+        params.update({
+            'type': self.ORDER_TYPE_STOP_LOSS_LIMIT,
+            'timeInForce': timeInForce
+        })
+        return self.create_order(**params)
 
     def order_limit_buy(self, timeInForce=TIME_IN_FORCE_GTC, **params):
         """Send in a new limit buy order
@@ -1362,6 +1399,40 @@ class Client(object):
             'side': self.SIDE_SELL
         })
         return self.order_limit(timeInForce=timeInForce, **params)
+    
+    def order_limit_sell_stop_loss(self, timeInForce=TIME_IN_FORCE_GTC, **params):
+        """Send in a new limit sell order
+
+        :param symbol: required
+        :type symbol: str
+        :param quantity: required
+        :type quantity: decimal
+        :param price: required
+        :type price: str
+        :param timeInForce: default Good till cancelled
+        :type timeInForce: str
+        :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+        :type newClientOrderId: str
+        :param stopPrice: Used with stop orders
+        :type stopPrice: decimal
+        :param icebergQty: Used with iceberg orders
+        :type icebergQty: decimal
+        :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+        :type newOrderRespType: str
+        :param recvWindow: the number of milliseconds the request is valid for
+        :type recvWindow: int
+
+        :returns: API response
+
+        See order endpoint for full response options
+
+        :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+        """
+        params.update({
+            'side': self.SIDE_SELL
+        })
+        return self.order_limit_stop_loss(timeInForce=timeInForce, **params)
 
     def order_market(self, **params):
         """Send in a new market order

@@ -326,8 +326,8 @@ class Graphic:
         self.processed_data['sells'] = sells
         self.graph_ag.extend(["sells", "buys"])
         
-        operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
-        return operacion
+        # operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
+        return data[-1] 
     
     def get_last_ma_period(self, _period):
         return self.processed_data['ma_{}'.format(_period)][-1]
