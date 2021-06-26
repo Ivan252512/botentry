@@ -324,11 +324,25 @@ class TraderBot(object):
             'ag_order': ag_order,
             'ag_profit': ag_profit
         }
-
-    
+            
+    def invest_based_ag(self):
+        ag_order = self.info_to_invest['ag_order']
+        if 'coin_1_sell_quantity' in ag_order: 
+            self.buy_limit(float(ag_order["coin_2_buy_price"]))
+            self.stop_loss_limit_sell(
+                float(ag_order["coin_1_sell_quantity"]) * ( 1 - 0.01 ),
+                float(ag_order["coin_1_sell_quantity"]) * ( 1 - 0.015 )
+            )
+        elif 'coin_2_sell_price' in ag_order:
+            self.cancel_all_open_orders()
+            self.stop_loss_limit_sell(
+                float(ag_order["coin_2_sell_price"]),
+                float(ag_order["coin_2_sell_price"])  * ( 1 - 0.005 )
+            )
 
     def decision_15m(self):
         info_15m = self.info_to_invest['15m']
+        
 
     def decision_1h(self):
         info_1h = self.info_to_invest['1h']
@@ -338,16 +352,6 @@ class TraderBot(object):
 
     def decision_1d(self):
         info_1d = self.info_to_invest['1d']
-        
-    def order_execution_ag(self):
-        ag_order = self.info_to_invest["ag_order"]
-        if 'coin_1_sell_quantity' in ag_order: 
-            self.buy_limit(float(ag_order["coin_2_buy_price"]))
-        else:
-            self.stop_loss_limit_sell(
-                float(ag_order["coin_2_sell_price"]),
-                float(ag_order["coin_2_sell_price"]) * ( 1 + 0.02 )
-            )
         
     def cancel_all_open_orders(self):
         for oo in self.get_open_orders():
@@ -390,7 +394,7 @@ class TraderBot(object):
         self.money = 0
         return buy
 
-    def stop_loss_limit_sell(self, price, stop):
+    def stop_loss_limit_sell(self, stop, price):
         buy = None
         if price > 0:
             quantity = self.money / price
