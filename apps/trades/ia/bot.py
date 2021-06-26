@@ -5,9 +5,13 @@ from apps.trades.ia.basic_trading.trader import (
     TraderBNBBUSD,
     TraderBUSDUSDT
 )
-from apps.trades.ia.genetic_algorithm import ag
+
+from apps.trades.models import Individual as IndividualModel
+
 
 from apps.trades.ia.genetic_algorithm.ag import GeneticAlgorithm
+
+from apps.trades.ia.genetic_algorithm.ag import Individual as IndividualAG
 
 from apps.trades.ia.utils.utils import (
     SimulateMarket
@@ -61,12 +65,24 @@ class TraderBot(object):
                     _max_cod_ind_value=1024,
                     _environment=environment,
                 )
-                score, constants, operations = self.ag.evolution_individual_optimized(
+                score, constants, operations, best = self.ag.evolution_individual_optimized(
                     _market=self.market,
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
                     _generations_pob=1,
                     _generations_ind=5
+                )
+                
+                IndividualModel.objects.create(
+                    length=best.length,
+                    encoded_variables_quantity=best.encoded_variables_quantity,
+                    mutation_intensity=best.mutation_intensity,
+                    dna=best.dna,
+                    score=best.score,
+                    min_value=best.min_value,
+                    max_value=best.max_value,
+                    pair=self.pair,
+                    temp=self.principal_trade_period,
                 )
 
                 last_operation = trader.graphic.process_data_received_ag(
@@ -76,6 +92,84 @@ class TraderBot(object):
                     'score': score,
                     'constants': constants,
                     'operations': operations,
+                    'last_operation': last_operation
+                }
+
+            self.traders_per_period.append(
+                {
+                    'period': p,
+                    'trader': trader,
+                    'ag': ag
+                }
+            )
+            
+    def eval_function_with_genetic_algorithm_last_individual(self):
+        for p in self.periods:
+            trader = self.trader_class(
+                _trading_interval=p,
+                _money=self.money
+            )
+            trader.prepare_data(_graphic=False)
+            data = trader.graphic.get_processed_data()
+            ag = {}
+            if p == self.principal_trade_period:
+                data_normalized = trader.graphic.get_normalized_processed_data()
+                environment = data_normalized.values.tolist()
+
+                # Market info
+                self.market = SimulateMarket(
+                    _data=data
+                )
+
+                # AG codification
+                self.ag = GeneticAlgorithm(
+                    _populations_quantity=1,
+                    _population_min=100,
+                    _population_max=500,
+                    _individual_dna_length=12,
+                    _individual_encoded_variables_quantity=len(environment[0]),
+                    _individual_muatition_intensity=10,
+                    _min_cod_ind_value=-1024,
+                    _max_cod_ind_value=1024,
+                    _environment=environment,
+                )
+                
+                ind_model_object = IndividualModel.objects.filter(
+                    length=12,
+                    encoded_variables_quantity=len(environment[0]),
+                    min_value=-1024,
+                    max_value=1024,
+                    pair=self.pair,
+                    temp=self.principal_trade_period
+                ).last()
+                
+                individual = IndividualAG(
+                    _length=ind_model_object.length,
+                    _encoded_variables_quantity=ind_model_object.encoded_variables_quantity,
+                    _mutation_intensity=ind_model_object.mutation_intensity,
+                    _min_value=ind_model_object.min_value,
+                    _max_value=ind_model_object.max_value,
+                    _dna=ind_model_object.dna
+                )
+                
+                data = {
+                    "market": self.market,
+                    "initial_amount": self.money,
+                    "evaluation_intervals": 4,
+                    "individual": individual
+                }
+                
+                best = self.ag.optimized_individual_function(
+                   data
+                )
+
+                last_operation = trader.graphic.process_data_received_ag(
+                    best.relevant_info)
+                
+                ag = {
+                    'score': best.score,
+                    'constants': best.decode_dna_variables_to_decimal(),
+                    'operations': best.relevant_info,
                     'last_operation': last_operation
                 }
 

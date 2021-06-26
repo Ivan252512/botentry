@@ -102,6 +102,9 @@ class Individual:
                 dec += 2**(n_count-1)
             n_count -= 1
         return a+((dec)/(2**n-1))*(b-a)
+    
+    def __str__(self):
+        return self.dna
 
 
 @jit(nopython=True)
@@ -225,6 +228,11 @@ class Population:
     def calculate_population_score(self):
         self.__order_by_individual_score()
         return self.population[-1].score
+
+    def get_best_individual(self):
+        self.__order_by_individual_score()
+        best_individual = self.population[-1]
+        return best_individual
 
     def get_best_individual_constants(self):
         self.__order_by_individual_score()
@@ -356,7 +364,8 @@ class GeneticAlgorithm:
         constants = best.get_best_individual_constants()
         score = best.get_best_individual_score()
         operations = best.get_best_individual_operarions()
-        return score, constants, operations
+        best_individual = best.get_best_individual()
+        return score, constants, operations, best_individual
 
     def __order_by_population_score(self):
         self.populations.sort(key=lambda population: population.score)

@@ -3,6 +3,14 @@ from django.http import JsonResponse, HttpResponse
 from apps.trades.binance.client import Client
 from apps.trades.binance.websockets import BinanceSocketManager
 
+from apps.trades.ia.bot import (
+    BTCBUSDTraderBot
+)
+
+import traceback
+
+from django.views.decorators.csrf import csrf_exempt
+
 # Exchange endpoints
 
 def get_products(request):
@@ -130,3 +138,39 @@ def get_account(request):
         return JsonResponse({'message': account}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
+
+# Bot Endpoints
+
+@csrf_exempt
+def train_btc(request):
+    if request.method == "POST":
+        try:
+            btb = BTCBUSDTraderBot(
+                _principal_trade_period="15m"
+            )
+            btb.eval_function_with_genetic_algorithm()
+            btb.set_info_to_invest()
+            btb.graph_data()
+            return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+        except Exception:
+            traceback.print_exc()
+            return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
+    else:
+        return JsonResponse({'message': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def evaluate_btc(request):
+    if request.method == "POST":
+        try:
+            btb = BTCBUSDTraderBot(
+                _principal_trade_period="15m"
+            )
+            btb.eval_function_with_genetic_algorithm_last_individual()
+            btb.set_info_to_invest()
+            btb.graph_data()
+            return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+        except Exception:
+            traceback.print_exc()
+            return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
+    else:
+        return JsonResponse({'message': 'Método no permitido'}, status=405)

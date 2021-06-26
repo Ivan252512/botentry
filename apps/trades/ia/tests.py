@@ -24,7 +24,6 @@ class TraderBotCase:
         # self.trader_bot.set_info_to_invest()
         self.trader_bot.eval_function_with_genetic_algorithm()
         self.trader_bot.set_info_to_invest()
-        print(self.trader_bot.info_to_invest)
         self.trader_bot.graph_data()
         
         print("OPEN ORDERS")            
