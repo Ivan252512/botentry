@@ -1,3 +1,4 @@
+from apps.trades.binance.exceptions import BinanceAPIException
 from apps.trades.ia.basic_trading.trader import (
     TraderBTCBUSD,
     TraderETHBUSD,
@@ -24,6 +25,8 @@ class TraderBot(object):
     def __init__(self, _principal_trade_period):
         self.stop_loss = 0
         self.money = 50
+        self.stop_loss_percent = 0.02
+        self.stop_loss_divisor_plus = 2
         self.market = None
         self.periods = ['15m', '1h', '4h', '1d']
         self.trader_class = None
@@ -56,23 +59,25 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=100,
-                    _population_max=500,
+                    _population_min=25,
+                    _population_max=50,
                     _individual_dna_length=12,
                     _individual_encoded_variables_quantity=len(environment[0]),
                     _individual_muatition_intensity=10,
-                    _min_cod_ind_value=-1024,
-                    _max_cod_ind_value=1024,
+                    _min_cod_ind_value=-2048,
+                    _max_cod_ind_value=2048,
                     _environment=environment,
+                    _stop_loss_percent=self.stop_loss_percent,
+                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus
                 )
                 score, constants, operations, best = self.ag.evolution_individual_optimized(
                     _market=self.market,
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
                     _generations_pob=1,
-                    _generations_ind=5
+                    _generations_ind=5000
                 )
-                
+
                 IndividualModel.objects.create(
                     length=best.length,
                     encoded_variables_quantity=best.encoded_variables_quantity,
@@ -87,7 +92,7 @@ class TraderBot(object):
 
                 last_operation = trader.graphic.process_data_received_ag(
                     operations)
-                
+
                 ag = {
                     'score': score,
                     'constants': constants,
@@ -102,7 +107,7 @@ class TraderBot(object):
                     'ag': ag
                 }
             )
-            
+
     def eval_function_with_genetic_algorithm_last_individual(self):
         for p in self.periods:
             trader = self.trader_class(
@@ -124,25 +129,27 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=100,
-                    _population_max=500,
+                    _population_min=50,
+                    _population_max=100,
                     _individual_dna_length=12,
                     _individual_encoded_variables_quantity=len(environment[0]),
                     _individual_muatition_intensity=10,
-                    _min_cod_ind_value=-1024,
-                    _max_cod_ind_value=1024,
+                    _min_cod_ind_value=-2048,
+                    _max_cod_ind_value=2048,
                     _environment=environment,
+                    _stop_loss_percent=self.stop_loss_percent,
+                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus
                 )
-                
+
                 ind_model_object = IndividualModel.objects.filter(
                     length=12,
                     encoded_variables_quantity=len(environment[0]),
-                    min_value=-1024,
-                    max_value=1024,
+                    min_value=-2048,
+                    max_value=2048,
                     pair=self.pair,
                     temp=self.principal_trade_period
                 ).last()
-                
+
                 individual = IndividualAG(
                     _length=ind_model_object.length,
                     _encoded_variables_quantity=ind_model_object.encoded_variables_quantity,
@@ -151,21 +158,21 @@ class TraderBot(object):
                     _max_value=ind_model_object.max_value,
                     _dna=ind_model_object.dna
                 )
-                
+
                 data = {
                     "market": self.market,
                     "initial_amount": self.money,
                     "evaluation_intervals": 4,
                     "individual": individual
                 }
-                
+
                 best = self.ag.optimized_individual_function(
-                   data
+                    data
                 )
 
                 last_operation = trader.graphic.process_data_received_ag(
                     best.relevant_info)
-                
+
                 ag = {
                     'score': best.score,
                     'constants': best.decode_dna_variables_to_decimal(),
@@ -324,25 +331,43 @@ class TraderBot(object):
             'ag_order': ag_order,
             'ag_profit': ag_profit
         }
-            
+
     def invest_based_ag(self):
         ag_order = self.info_to_invest['ag_order']
-        if 'coin_1_sell_quantity' in ag_order: 
-            self.buy_limit(float(ag_order["coin_2_buy_price"]))
-            self.stop_loss_limit_sell(
-                float(ag_order["coin_1_sell_quantity"]) * ( 1 - 0.01 ),
-                float(ag_order["coin_1_sell_quantity"]) * ( 1 - 0.015 )
-            )
+        if 'coin_1_sell_quantity' in ag_order:
+            sl = True
+            try:
+                self.buy_limit(float(ag_order["coin_2_buy_price"]))
+            except BinanceAPIException as e:
+                if e.code == -2010 and e.message == "Account has insufficient balance for requested action.":
+                    sl = False
+            finally:
+                if sl:
+                    self.stop_loss_limit_sell(
+                        float(ag_order["coin_2_buy_price"]) * ( 1 - self.stop_loss_percent ),
+                        float(ag_order["coin_2_buy_price"]) * ( 1 - self.stop_loss_percent - 0.005 )
+                    )
         elif 'coin_2_sell_price' in ag_order:
+            all_or = self.get_open_orders()
+            # if len(all_or) <= 0:
+            #     return
             self.cancel_all_open_orders()
-            self.stop_loss_limit_sell(
-                float(ag_order["coin_2_sell_price"]),
-                float(ag_order["coin_2_sell_price"])  * ( 1 - 0.005 )
-            )
+            try:
+                self.stop_loss_limit_sell(
+                    float(ag_order["coin_2_sell_price"]),
+                    float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
+                )
+            except BinanceAPIException as e:
+                if e.code == -2010 and e.message == "Stop price would trigger immediately.":
+                    if len(all_or) > 0:
+                        lor = all_or[-1]
+                        stopPrice = lor["stopPrice"]
+                        self.sell_market(
+                            float(stopPrice)
+                        )
 
     def decision_15m(self):
         info_15m = self.info_to_invest['15m']
-        
 
     def decision_1h(self):
         info_1h = self.info_to_invest['1h']
@@ -352,57 +377,67 @@ class TraderBot(object):
 
     def decision_1d(self):
         info_1d = self.info_to_invest['1d']
-        
+
     def cancel_all_open_orders(self):
         for oo in self.get_open_orders():
             if oo["symbol"] == self.pair:
                 self.cancel_order(oo["orderId"])
-            
+
     def cancel_order(self, order_id):
         self.client.cancel_order(
             symbol=self.pair,
             orderId=order_id
         )
-            
+
     def set_money(self, _money):
         if float(self.get_coin1_balance()['free']) >= _money:
             self.money = _money
             return True
         return False
 
-    def buy_market(self):
-        price = float(self.get_last_average_price()['price'])
+    def buy_market(self, price):
         buy = None
         if price > 0:
             quantity = self.money / price
             buy = self.client.order_market_buy(
                 symbol=self.pair,
-                quantity=quantity,
+                quantity=round(quantity, 6),
             )
         self.money = 0
         return buy
-    
+
+    def sell_market(self, price):
+        sell = None
+        if price > 0:
+            quantity = self.money / price
+            sell = self.client.order_market_sell(
+                symbol=self.pair,
+                quantity=round(quantity, 6),
+            )
+        self.money = 0
+        return sell
+
     def buy_limit(self, price):
         buy = None
         if price > 0:
             quantity = self.money / price
             buy = self.client.order_limit_buy(
                 symbol=self.pair,
-                quantity=quantity,
-                price=price
+                quantity=round(quantity, 6),
+                price=round(price, 2)
             )
         self.money = 0
         return buy
 
     def stop_loss_limit_sell(self, stop, price):
         buy = None
-        if price > 0:
+        if price > 0 and stop > 0:
             quantity = self.money / price
             buy = self.client.order_limit_sell_stop_loss(
                 symbol=self.pair,
-                quantity=quantity,
-                price=price,
-                stopPrice=stop
+                quantity=round(quantity, 6),
+                price=round(price, 2),
+                stopPrice=round(stop, 2)
             )
         self.money = 0
         return buy

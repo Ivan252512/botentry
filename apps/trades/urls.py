@@ -28,4 +28,7 @@ urlpatterns = [
     # Bot
     path('bot/train_btc', views.train_btc, name='train-btc'),
     path('bot/evaluate_btc', views.evaluate_btc, name='evaluate-btc'),
+    
+    ## Async evaluations
+    path('bot/run_bot', views.run_bot, name='run-bot'),
 ]

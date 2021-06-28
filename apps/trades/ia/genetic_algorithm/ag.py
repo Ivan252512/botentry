@@ -273,6 +273,8 @@ class GeneticAlgorithm:
                  _min_cod_ind_value,
                  _max_cod_ind_value,
                  _environment,
+                 _stop_loss_percent,
+                 _stop_loss_divisor_plus,
                  _individual_relevant_info=False,
                  ):
         self.populations = []
@@ -290,6 +292,8 @@ class GeneticAlgorithm:
             self.individual_encoded_variables_quantity
         self.individual_relevant_info = _individual_relevant_info
         self.evaluated = BinaryTree(0, 0)
+        self.stop_loss_percent = _stop_loss_percent
+        self.stop_loss_divisor_plus = _stop_loss_divisor_plus
         for _ in range(self.populations_quantity):
             self.populations.append(
                 Population(
@@ -393,8 +397,8 @@ class GeneticAlgorithm:
         evaluation_intervals = _data['evaluation_intervals']
         generations = _data['generations']
         population = _data['population']
-        sl_percent = 0.01
-        sl_divisor_plus = 2
+        sl_percent = self.stop_loss_percent
+        sl_divisor_plus = self.stop_loss_divisor_plus
 
         for gen in range(generations):
             population_length = population.quantity - 1
@@ -503,8 +507,8 @@ class GeneticAlgorithm:
         market = _data['market']
         initial_amount = _data['initial_amount']
         evaluation_intervals = _data['evaluation_intervals']
-        sl_percent = 0.01
-        sl_divisor_plus = 2
+        sl_percent = self.stop_loss_percent
+        sl_divisor_plus = self.stop_loss_divisor_plus
 
         _wallet = SimulateBasicWallet()
         _wallet.deposit_coin_1(initial_amount)

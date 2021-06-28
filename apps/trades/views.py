@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from apps.trades.binance.client import Client
 from apps.trades.binance.websockets import BinanceSocketManager
+from apps.trades.binance.exceptions import BinanceAPIException
 
 from apps.trades.ia.bot import (
     BTCBUSDTraderBot
@@ -10,6 +11,9 @@ from apps.trades.ia.bot import (
 import traceback
 
 from django.views.decorators.csrf import csrf_exempt
+
+from threading import Thread
+import time
 
 # Exchange endpoints
 
@@ -143,31 +147,58 @@ def get_account(request):
 
 @csrf_exempt
 def train_btc(request):
-    if request.method == "POST":
-        try:
-            btb = BTCBUSDTraderBot(
-                _principal_trade_period="15m"
-            )
-            btb.eval_function_with_genetic_algorithm()
-            btb.set_info_to_invest()
-            btb.graph_data()
-            return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
-        except Exception:
-            traceback.print_exc()
-            return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
-    else:
-        return JsonResponse({'message': 'Método no permitido'}, status=405)
+    try:
+        btb = BTCBUSDTraderBot(
+            _principal_trade_period="15m"
+        )
+        btb.eval_function_with_genetic_algorithm()
+        btb.set_info_to_invest()
+        btb.cancel_all_open_orders()
+        btb.invest_based_ag()
+        btb.graph_data()
+        return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+    except Exception:
+        traceback.print_exc()
+        return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
 
 @csrf_exempt
 def evaluate_btc(request):
-    if request.method == "POST":
+    try:
+        btb = BTCBUSDTraderBot(
+            _principal_trade_period="15m"
+        )
+        btb.eval_function_with_genetic_algorithm_last_individual()
+        btb.set_info_to_invest()
+        btb.invest_based_ag()
+        btb.graph_data()
+        return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+    except Exception:
+        traceback.print_exc()
+        return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
+    
+def async_evaluate(request):
+    minutos = 0
+    while True:
         try:
-            btb = BTCBUSDTraderBot(
-                _principal_trade_period="15m"
-            )
-            btb.eval_function_with_genetic_algorithm_last_individual()
-            btb.set_info_to_invest()
-            btb.graph_data()
+            if minutos == 0:
+                t = Thread(target=train_btc, args=(request, ))
+                t.start()
+            else:
+                t = Thread(target=evaluate_btc, args=(request, ))
+                t.start()
+        except Exception:
+            traceback.print_exc()
+        minutos += 15
+        if minutos >= 6 * 4 * 15:
+            minutos = 0
+        time.sleep(15 * 60)
+    
+@csrf_exempt
+def run_bot(request):
+    if request.method == "GET":
+        try:
+            t = Thread(target=async_evaluate, args=(request, ))
+            t.start()
             return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
         except Exception:
             traceback.print_exc()
