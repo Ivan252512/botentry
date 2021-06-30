@@ -15,6 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from threading import Thread
 import time
 
+import datetime
+
 # Exchange endpoints
 
 def get_products(request):
@@ -147,6 +149,8 @@ def get_account(request):
 
 @csrf_exempt
 def train_btc(request):
+    print("++++++++++++++++++++++++++++++++++++++++++++")
+    print(datetime.datetime.now())
     try:
         btb = BTCBUSDTraderBot(
             _principal_trade_period="15m"
@@ -163,6 +167,8 @@ def train_btc(request):
 
 @csrf_exempt
 def evaluate_btc(request):
+    print("++++++++++++++++++++++++++++++++++++++++++++")
+    print(datetime.datetime.now())
     try:
         btb = BTCBUSDTraderBot(
             _principal_trade_period="15m"

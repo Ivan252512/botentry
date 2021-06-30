@@ -8,6 +8,7 @@ from apps.trades.ia.basic_trading.trader import (
 )
 
 from apps.trades.models import Individual as IndividualModel
+from apps.trades.models import Trade as TradeModel
 
 
 from apps.trades.ia.genetic_algorithm.ag import GeneticAlgorithm
@@ -20,11 +21,12 @@ from apps.trades.ia.utils.utils import (
 
 from apps.trades.binance.client import Client
 
+import traceback
+
 
 class TraderBot(object):
     def __init__(self, _principal_trade_period):
-        self.stop_loss = 0
-        self.money = 50
+        self.money = 11
         self.stop_loss_percent = 0.02
         self.stop_loss_divisor_plus = 2
         self.market = None
@@ -59,13 +61,13 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=25,
-                    _population_max=50,
-                    _individual_dna_length=12,
+                    _population_min=100,
+                    _population_max=500,
+                    _individual_dna_length=10,
                     _individual_encoded_variables_quantity=len(environment[0]),
-                    _individual_muatition_intensity=10,
-                    _min_cod_ind_value=-2048,
-                    _max_cod_ind_value=2048,
+                    _individual_muatition_intensity=8,
+                    _min_cod_ind_value=-1024,
+                    _max_cod_ind_value=1024,
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
                     _stop_loss_divisor_plus=self.stop_loss_divisor_plus
@@ -75,7 +77,7 @@ class TraderBot(object):
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
                     _generations_pob=1,
-                    _generations_ind=5000
+                    _generations_ind=5
                 )
 
                 IndividualModel.objects.create(
@@ -129,23 +131,23 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=50,
-                    _population_max=100,
-                    _individual_dna_length=12,
+                    _population_min=100,
+                    _population_max=500,
+                    _individual_dna_length=10,
                     _individual_encoded_variables_quantity=len(environment[0]),
-                    _individual_muatition_intensity=10,
-                    _min_cod_ind_value=-2048,
-                    _max_cod_ind_value=2048,
+                    _individual_muatition_intensity=8,
+                    _min_cod_ind_value=-1024,
+                    _max_cod_ind_value=1024,
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
                     _stop_loss_divisor_plus=self.stop_loss_divisor_plus
                 )
 
                 ind_model_object = IndividualModel.objects.filter(
-                    length=12,
+                    length=10,
                     encoded_variables_quantity=len(environment[0]),
-                    min_value=-2048,
-                    max_value=2048,
+                    min_value=-1024,
+                    max_value=1024,
                     pair=self.pair,
                     temp=self.principal_trade_period
                 ).last()
@@ -167,7 +169,7 @@ class TraderBot(object):
                 }
 
                 best = self.ag.optimized_individual_function(
-                    data
+                    _data=data
                 )
 
                 last_operation = trader.graphic.process_data_received_ag(
@@ -177,7 +179,7 @@ class TraderBot(object):
                     'score': best.score,
                     'constants': best.decode_dna_variables_to_decimal(),
                     'operations': best.relevant_info,
-                    'last_operation': last_operation
+                    'last_operation': last_operation 
                 }
 
             self.traders_per_period.append(
@@ -334,19 +336,34 @@ class TraderBot(object):
 
     def invest_based_ag(self):
         ag_order = self.info_to_invest['ag_order']
+        ag_profit = self.info_to_invest['ag_profit']
+        print("-------------------------------------------")
+        print(ag_order)
+        print(ag_profit)
+        print("-------------------------------------------")
         if 'coin_1_sell_quantity' in ag_order:
             sl = True
+            buyed_price = 0
             try:
-                self.buy_limit(float(ag_order["coin_2_buy_price"]))
+                buy = self.buy_limit(float(ag_order["coin_2_buy_price"]))
+                if buy:
+                    if buy["fills"]:
+                        buyed_price = float(buy["fills"][-1]["price"])
             except BinanceAPIException as e:
                 if e.code == -2010 and e.message == "Account has insufficient balance for requested action.":
                     sl = False
             finally:
-                if sl:
-                    self.stop_loss_limit_sell(
-                        float(ag_order["coin_2_buy_price"]) * ( 1 - self.stop_loss_percent ),
-                        float(ag_order["coin_2_buy_price"]) * ( 1 - self.stop_loss_percent - 0.005 )
-                    )
+                if sl and buyed_price >= 0:
+                    try:
+                        self.stop_loss_limit_sell(
+                            float(buyed_price) * ( 1 - self.stop_loss_percent ),
+                            float(buyed_price) * ( 1 - self.stop_loss_percent - 0.005 )
+                        )
+                    except BinanceAPIException as e:
+                        if e.code == -2010 and e.message == "Stop price would trigger immediately.":
+                            self.sell_market(
+                                float(buyed_price)
+                            )
         elif 'coin_2_sell_price' in ag_order:
             all_or = self.get_open_orders()
             # if len(all_or) <= 0:
@@ -396,50 +413,126 @@ class TraderBot(object):
         return False
 
     def buy_market(self, price):
+        print("BUY MARKET PRICE: ", price)
         buy = None
         if price > 0:
-            quantity = self.money / price
-            buy = self.client.order_market_buy(
-                symbol=self.pair,
-                quantity=round(quantity, 6),
-            )
-        self.money = 0
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("BUY MARKET: ", self.pair, round(quantity, 6), quantity)
+                buy = self.client.order_market_buy(
+                    symbol=self.pair,
+                    quantity=round(quantity, 6),
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="BUY MARKET",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
         return buy
 
     def sell_market(self, price):
+        print("SELL MARKET PRICE: ", price)
         sell = None
         if price > 0:
-            quantity = self.money / price
-            sell = self.client.order_market_sell(
-                symbol=self.pair,
-                quantity=round(quantity, 6),
-            )
-        self.money = 0
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("SELL MARKET: ", self.pair, round(quantity, 6), quantity)
+                sell = self.client.order_market_sell(
+                    symbol=self.pair,
+                    quantity=round(quantity, 6),
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="SELL MARKET",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
         return sell
 
     def buy_limit(self, price):
+        print("BUY LIMIT PRICE: ", price)
         buy = None
         if price > 0:
-            quantity = self.money / price
-            buy = self.client.order_limit_buy(
-                symbol=self.pair,
-                quantity=round(quantity, 6),
-                price=round(price, 2)
-            )
-        self.money = 0
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("BUY LIMIT: ", self.pair, round(quantity, 6), quantity, round(price, 2), price)
+                buy = self.client.order_limit_buy(
+                    symbol=self.pair,
+                    quantity=round(quantity, 6),
+                    price=round(price, 2)
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="BUY LIMIT",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
         return buy
 
     def stop_loss_limit_sell(self, stop, price):
+        print("SL LIMIT PRICE: ", price)
         buy = None
         if price > 0 and stop > 0:
-            quantity = self.money / price
-            buy = self.client.order_limit_sell_stop_loss(
-                symbol=self.pair,
-                quantity=round(quantity, 6),
-                price=round(price, 2),
-                stopPrice=round(stop, 2)
-            )
-        self.money = 0
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("SL LIMIT: ", self.pair, round(quantity, 6), quantity, round(price, 2), price, round(stop, 2), stop)
+                buy = self.client.order_limit_sell_stop_loss(
+                    symbol=self.pair,
+                    quantity=round(quantity, 6),
+                    price=round(price, 2),
+                    stopPrice=round(stop, 2)
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="SL LIMIT",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
         return buy
 
     def get_last_average_price(self):

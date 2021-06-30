@@ -290,11 +290,22 @@ class Graphic:
             dpi=600,
         )
 
+        lo = ""
+        for k in _last_operation.keys():
+            if not "balance" in k:
+                if not "position" in k:
+                    if not "stop_loss" in k:
+                        lo += f"{k}: {_last_operation[k]} "
+                    
+        lo += f"initial: {_initial}, score: {_score} "
+        
+        s = fplt.make_mpf_style(base_mpf_style='charles', rc={'font.size':2})
+
         fplt.plot(
             self.processed_data,
             type='candle',
-            style='charles',
-            title="{}_{}_{}_{}".format(self.pair, _initial, _score, _last_operation),
+            style=s,
+            title=lo,
             ylabel='Price ($)',
             volume=True,
             ylabel_lower='Shares\nTraded',

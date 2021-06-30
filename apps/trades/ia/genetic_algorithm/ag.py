@@ -80,6 +80,7 @@ class Individual:
 
     def add_relevant_info(self, _info):
         self.relevant_info.append(_info)
+        
 
     @staticmethod
     @jit(nopython=True)
@@ -244,7 +245,7 @@ class Population:
         best_individual = self.population[-1]
         return best_individual.score
 
-    def get_best_individual_operarions(self):
+    def get_best_individual_operations(self):
         self.__order_by_individual_score()
         best_individual = self.population[-1]
         return best_individual.relevant_info
@@ -258,7 +259,7 @@ class Population:
         self.__order_by_individual_score()
         constants = self.get_best_individual_constants()
         score = self.get_best_individual_score()
-        operations = self.get_best_individual_operarions()
+        operations = self.get_best_individual_operations()
         return score, constants, operations
 
 
@@ -367,7 +368,7 @@ class GeneticAlgorithm:
         best = self.populations[-1]
         constants = best.get_best_individual_constants()
         score = best.get_best_individual_score()
-        operations = best.get_best_individual_operarions()
+        operations = best.get_best_individual_operations()
         best_individual = best.get_best_individual()
         return score, constants, operations, best_individual
 
@@ -491,10 +492,10 @@ class GeneticAlgorithm:
             t.close()
             for individual in individuals:
                 self.evaluated.insert(individual.dna, individual.score)
-            print("In memory data binary tree size: ", self.evaluated.size)
             population.population = individuals
             score = population.calculate_population_score()
-            print(f"Gen {gen} score: {score} ")
+            if gen % 100 == 0:
+                print(f"Gen {gen} score: {score} ")
             population.breed()
         return population
 
@@ -515,51 +516,52 @@ class GeneticAlgorithm:
         if individual.score == 0:
             evaluation = self.__evaluate(individual, evaluation_intervals)
             for e in evaluation:
-                if e["buy"]:
-                    # print(e)
-                    coin_1_quantity = _wallet.get_balance_in_coin1()
-                    if coin_1_quantity > 10:
-                        coin_2_quantity, coin_2_price = market.transaction_at_moment_buy_coin2(
-                            coin_1_quantity, e['position_time'])
-                        if _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity):
-                            individual.add_relevant_info({
-                                'coin_1_sell_quantity': coin_1_quantity,
-                                'coin_2_buy_quantity': coin_2_quantity,
-                                'coin_2_buy_price': coin_2_price,
-                                'position_time': e['position_time'],
-                                'balance_coin_1': _wallet.get_balance_in_coin1(),
-                                'balance_coin_2': _wallet.get_balance_in_coin2(),
-                                'stop_loss': [coin_2_price * (1 - sl_percent)]
-                            })
-                            #print("compra", individual.relevant_info)
-                if len(individual.relevant_info) > 0 and "coin_1_sell_quantity" in individual.relevant_info[-1]:
-                    _, coin_2_last_price_price = market.transaction_at_moment_sell_coin2(
-                        0, e['position_time'])
-                    sl = individual.relevant_info[-1]["stop_loss"][-1]
-                    if coin_2_last_price_price < sl:
-                        coin_2_quantity = _wallet.get_balance_in_coin2()
-                        if coin_2_quantity > 0:
-                            coin_1_quantity_market, coin_2_price_market = market.transaction_at_moment_sell_coin2(
-                                coin_2_quantity, e['position_time'])
-                            coin_2_price_sl = individual.relevant_info[-1]["stop_loss"][-1]
-                            coin_1_quantity_sl = coin_2_price_sl * coin_2_quantity
-                            coin_2_price = coin_2_price_sl if coin_2_price_sl < coin_2_price_market else coin_2_price_market
-                            coin_1_quantity = coin_1_quantity_sl if coin_2_price_sl < coin_2_price_market else coin_1_quantity_market
-                            # self.individual_relevant_info:
-                            if _wallet.sell_coin_2(coin_1_quantity, coin_2_quantity):
+                if e["position_time"] < 500:
+                    if e["buy"]:
+                        # print(e)
+                        coin_1_quantity = _wallet.get_balance_in_coin1()
+                        if coin_1_quantity > 10:
+                            coin_2_quantity, coin_2_price = market.transaction_at_moment_buy_coin2(
+                                coin_1_quantity, e['position_time'])
+                            if _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity):
                                 individual.add_relevant_info({
-                                    'coin_1_buy_quantity': coin_1_quantity,
-                                    'coin_2_sell_quantity': coin_2_quantity,
-                                    'coin_2_sell_price': coin_2_price,
+                                    'coin_1_sell_quantity': coin_1_quantity,
+                                    'coin_2_buy_quantity': coin_2_quantity,
+                                    'coin_2_buy_price': coin_2_price,
                                     'position_time': e['position_time'],
                                     'balance_coin_1': _wallet.get_balance_in_coin1(),
-                                    'balance_coin_2': _wallet.get_balance_in_coin2()
+                                    'balance_coin_2': _wallet.get_balance_in_coin2(),
+                                    'stop_loss': [coin_2_price * (1 - sl_percent)]
                                 })
-                                #print("vende: ", individual.relevant_info)
-                    else:
-                        individual.relevant_info[-1]["stop_loss"].append(
-                            individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_percent/sl_divisor_plus)))
-                        #print("aumenta stop loss: ", individual.relevant_info)
+                                #print("compra", individual.relevant_info)
+                    if len(individual.relevant_info) > 0 and "coin_1_sell_quantity" in individual.relevant_info[-1]:
+                        _, coin_2_last_price_price = market.transaction_at_moment_sell_coin2(
+                            0, e['position_time'])
+                        sl = individual.relevant_info[-1]["stop_loss"][-1]
+                        if coin_2_last_price_price < sl:
+                            coin_2_quantity = _wallet.get_balance_in_coin2()
+                            if coin_2_quantity > 0:
+                                coin_1_quantity_market, coin_2_price_market = market.transaction_at_moment_sell_coin2(
+                                    coin_2_quantity, e['position_time'])
+                                coin_2_price_sl = individual.relevant_info[-1]["stop_loss"][-1]
+                                coin_1_quantity_sl = coin_2_price_sl * coin_2_quantity
+                                coin_2_price = coin_2_price_sl if coin_2_price_sl < coin_2_price_market else coin_2_price_market
+                                coin_1_quantity = coin_1_quantity_sl if coin_2_price_sl < coin_2_price_market else coin_1_quantity_market
+                                # self.individual_relevant_info:
+                                if _wallet.sell_coin_2(coin_1_quantity, coin_2_quantity):
+                                    individual.add_relevant_info({
+                                        'coin_1_buy_quantity': coin_1_quantity,
+                                        'coin_2_sell_quantity': coin_2_quantity,
+                                        'coin_2_sell_price': coin_2_price,
+                                        'position_time': e['position_time'],
+                                        'balance_coin_1': _wallet.get_balance_in_coin1(),
+                                        'balance_coin_2': _wallet.get_balance_in_coin2()
+                                    })
+                                    #print("vende: ", individual.relevant_info)
+                        else:
+                            individual.relevant_info[-1]["stop_loss"].append(
+                                individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_percent/sl_divisor_plus)))
+                            #print("aumenta stop loss: ", individual.relevant_info)
             total_earn = _wallet.get_total_balance_in_coin1(
                 market.get_last_price())
             score = total_earn if total_earn != initial_amount else -1

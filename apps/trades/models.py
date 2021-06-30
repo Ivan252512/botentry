@@ -14,3 +14,13 @@ class Individual(models.Model):
     pair = models.CharField(max_length=10)
     temp = models.CharField(max_length=5)
     created_date = models.DateTimeField(auto_now=True, auto_now_add=False)
+
+class Trade(models.Model):
+    pair = models.CharField(max_length=10)
+    operation = models.CharField(max_length=10)
+    money = models.FloatField()
+    price = models.FloatField()
+    quantity = models.FloatField()   
+    error = models.TextField(blank=True, null=True)
+    traceback = models.TextField(blank=True, null=True)
+    created_date = models.DateTimeField(auto_now=True, auto_now_add=False)
