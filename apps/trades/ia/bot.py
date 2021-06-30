@@ -26,7 +26,7 @@ import traceback
 
 class TraderBot(object):
     def __init__(self, _principal_trade_period):
-        self.money = 11
+        self.money = 50
         self.stop_loss_percent = 0.02
         self.stop_loss_divisor_plus = 2
         self.market = None
@@ -61,8 +61,8 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=100,
-                    _population_max=500,
+                    _population_min=1000,
+                    _population_max=5000,
                     _individual_dna_length=10,
                     _individual_encoded_variables_quantity=len(environment[0]),
                     _individual_muatition_intensity=8,
@@ -77,7 +77,7 @@ class TraderBot(object):
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
                     _generations_pob=1,
-                    _generations_ind=5
+                    _generations_ind=5000
                 )
 
                 IndividualModel.objects.create(
@@ -131,8 +131,8 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=100,
-                    _population_max=500,
+                    _population_min=1000,
+                    _population_max=5000,
                     _individual_dna_length=10,
                     _individual_encoded_variables_quantity=len(environment[0]),
                     _individual_muatition_intensity=8,
@@ -365,23 +365,12 @@ class TraderBot(object):
                                 float(buyed_price)
                             )
         elif 'coin_2_sell_price' in ag_order:
-            all_or = self.get_open_orders()
-            # if len(all_or) <= 0:
-            #     return
             self.cancel_all_open_orders()
-            try:
-                self.stop_loss_limit_sell(
-                    float(ag_order["coin_2_sell_price"]),
-                    float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
-                )
-            except BinanceAPIException as e:
-                if e.code == -2010 and e.message == "Stop price would trigger immediately.":
-                    if len(all_or) > 0:
-                        lor = all_or[-1]
-                        stopPrice = lor["stopPrice"]
-                        self.sell_market(
-                            float(stopPrice)
-                        )
+            self.stop_loss_limit_sell(
+                float(ag_order["coin_2_sell_price"]),
+                float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
+            )
+
 
     def decision_15m(self):
         info_15m = self.info_to_invest['15m']
@@ -519,6 +508,14 @@ class TraderBot(object):
                     price=round(price, 2),
                     stopPrice=round(stop, 2)
                 )
+            except BinanceAPIException as e:
+                if e.code == -2010 and e.message == "Stop price would trigger immediately.":
+                        self.sell_market(
+                            float(round(stop, 2))
+                        )
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
             except Exception as e:
                 exception = str(e)
                 traceback_str = traceback.format_exc()
