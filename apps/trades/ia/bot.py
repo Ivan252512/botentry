@@ -26,7 +26,7 @@ import traceback
 
 class TraderBot(object):
     def __init__(self, _principal_trade_period):
-        self.money = 50
+        self.money = 2500
         self.stop_loss_percent = 0.02
         self.stop_loss_divisor_plus = 2
         self.market = None
@@ -61,9 +61,9 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=1000,
-                    _population_max=5000,
-                    _individual_dna_length=10,
+                    _population_min=100,
+                    _population_max=500,
+                    _individual_dna_length=12,
                     _individual_encoded_variables_quantity=len(environment[0]),
                     _individual_muatition_intensity=8,
                     _min_cod_ind_value=-1024,
@@ -77,7 +77,7 @@ class TraderBot(object):
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
                     _generations_pob=1,
-                    _generations_ind=5000
+                    _generations_ind=1000
                 )
 
                 IndividualModel.objects.create(
@@ -131,9 +131,9 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=1000,
-                    _population_max=5000,
-                    _individual_dna_length=10,
+                    _population_min=100,
+                    _population_max=500,
+                    _individual_dna_length=12,
                     _individual_encoded_variables_quantity=len(environment[0]),
                     _individual_muatition_intensity=8,
                     _min_cod_ind_value=-1024,
@@ -144,7 +144,7 @@ class TraderBot(object):
                 )
 
                 ind_model_object = IndividualModel.objects.filter(
-                    length=10,
+                    length=12,
                     encoded_variables_quantity=len(environment[0]),
                     min_value=-1024,
                     max_value=1024,

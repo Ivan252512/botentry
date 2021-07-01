@@ -157,8 +157,6 @@ def train_btc(request):
         )
         btb.eval_function_with_genetic_algorithm()
         btb.set_info_to_invest()
-        btb.cancel_all_open_orders()
-        btb.invest_based_ag()
         btb.graph_data()
         return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
     except Exception:
@@ -175,8 +173,8 @@ def evaluate_btc(request):
         )
         btb.eval_function_with_genetic_algorithm_last_individual()
         btb.set_info_to_invest()
-        btb.invest_based_ag()
         btb.graph_data()
+        btb.invest_based_ag()
         return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
     except Exception:
         traceback.print_exc()
@@ -186,18 +184,29 @@ def async_evaluate(request):
     minutos = 0
     while True:
         try:
-            if minutos == 0:
-                t = Thread(target=train_btc, args=(request, ))
-                t.start()
-            else:
-                t = Thread(target=evaluate_btc, args=(request, ))
-                t.start()
+            t = Thread(target=evaluate_btc, args=(request, ))
+            t.start()
         except Exception:
             traceback.print_exc()
         minutos += 15
         if minutos >= 6 * 4 * 15:
             minutos = 0
         time.sleep(15 * 60)
+        
+@csrf_exempt
+def async_train(request):
+    if request.method == "GET":
+        try:
+            t = Thread(target=train_btc, args=(request, ))
+            t.start()
+            return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+        except Exception:
+            traceback.print_exc()
+            return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
+    else:
+        return JsonResponse({'message': 'Método no permitido'}, status=405)
+
+
     
 @csrf_exempt
 def run_bot(request):

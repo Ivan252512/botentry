@@ -11,13 +11,13 @@ class Individual(models.Model):
     score = models.FloatField()
     min_value = models.IntegerField()
     max_value = models.IntegerField()
-    pair = models.CharField(max_length=10)
-    temp = models.CharField(max_length=5)
+    pair = models.TextField()
+    temp = models.TextField()
     created_date = models.DateTimeField(auto_now=True, auto_now_add=False)
 
 class Trade(models.Model):
-    pair = models.CharField(max_length=10)
-    operation = models.CharField(max_length=10)
+    pair = models.TextField()
+    operation = models.TextField()
     money = models.FloatField()
     price = models.FloatField()
     quantity = models.FloatField()   
