@@ -361,6 +361,13 @@ class TraderBot(object):
         print(ag_order)
         print(ag_profit)
         print("-------------------------------------------")
+        if not "position_time" in ag_order:
+            return
+        position_time = ag_order['position_time']
+        print("Position time: ", position_time)
+        if position_time != 499:
+            return
+        
         if 'coin_1_sell_quantity' in ag_order:
             increase_sl = False
             buyed_price = 0
@@ -389,7 +396,7 @@ class TraderBot(object):
         orders = self.get_open_orders()
         if orders:
             last_order = orders[-1]
-            stop_price = last_order["stopPrice"] * (1 + self.stop_loss_percent/self.stop_loss_divisor_plus )
+            stop_price = float(last_order["stopPrice"]) * (1 + float(self.stop_loss_percent)/float(self.stop_loss_divisor_plus))
             price = stop_price * (1 - 0.005)
             self.stop_loss_limit_sell(
                 float(stop_price),

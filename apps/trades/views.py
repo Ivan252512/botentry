@@ -8,6 +8,9 @@ from apps.trades.ia.bot import (
     BTCBUSDTraderBot
 )
 
+from apps.trades.models import Individual as IndividualModel
+
+
 import traceback
 
 from django.views.decorators.csrf import csrf_exempt
@@ -17,6 +20,8 @@ import time
 
 import datetime
 import json
+
+from django.utils.timezone import make_aware
 
 # Exchange endpoints
 
@@ -184,14 +189,28 @@ def train_btc(request):
             return JsonResponse({'message': f'Falta campo {f}'},
                                 status=400)
         fields_to_func[f"_{f}"] = body[f]
+
+    today = make_aware(datetime.datetime.now())
+    last_date = today - datetime.timedelta(days=1)
+
+    ie = IndividualModel.objects.filter(
+        length=body["individual_dna_length"],
+        min_value=body["min_cod_ind_value"],
+        max_value=body["max_cod_ind_value"],
+        pair="BTCBUSD",
+        temp=body["principal_trade_period"],
+        created_date__gte=last_date
+    ).exists()
     try:
-        btb = BTCBUSDTraderBot(
-            **fields_to_func
-        )
-        btb.eval_function_with_genetic_algorithm()
-        btb.set_info_to_invest()
-        btb.graph_data()
-        return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+        if not ie:
+            btb = BTCBUSDTraderBot(
+                **fields_to_func
+            )
+            btb.eval_function_with_genetic_algorithm()
+            btb.set_info_to_invest()
+            btb.graph_data()
+            return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+        return JsonResponse({'message': "Entrenamiento reciente con las mismas caracteristicas"}, status=200)
     except Exception:
         traceback.print_exc()
         return JsonResponse({'message': "Entrenamiento fallido"}, status=500)

@@ -25,7 +25,6 @@ class TraderBotCase:
         self.trader_bot.eval_function_with_genetic_algorithm()
         self.trader_bot.set_info_to_invest()
         self.trader_bot.graph_data()
-        print("BUY MARKET TEST: ", self.trader_bot.buy_market(35000))
 
         
     # def test_get_all_orders(self):
