@@ -365,33 +365,39 @@ class TraderBot(object):
             return
         position_time = ag_order['position_time']
         print("Position time: ", position_time)
-        if position_time != 499:
-            return
-        
+
         if 'coin_1_sell_quantity' in ag_order:
             increase_sl = False
             buyed_price = 0
             try:
-                buy = self.buy_market(float(ag_order["coin_2_buy_price"]))
-                if buy:
-                    if buy["fills"]:
-                        buyed_price = float(buy["fills"][-1]["price"])
+                if int(position_time) == 499:
+                    buy = self.buy_market(float(ag_order["coin_2_buy_price"]))
+                    if buy:
+                        if buy["fills"]:
+                            buyed_price = float(buy["fills"][-1]["price"])
             except BinanceAPIException as e:
                 if e.code == -2010 and e.message == "Account has insufficient balance for requested action.":
                     self.increase_sl()
                     increase_sl = True
             finally:
-                if not increase_sl and buyed_price >= 0:
-                    self.stop_loss_limit_sell(
-                        float(buyed_price) * ( 1 - self.stop_loss_percent ),
-                        float(buyed_price) * ( 1 - self.stop_loss_percent - 0.005 )
-                    )
+                if int(position_time) == 499:
+                    if not increase_sl and buyed_price >= 0:
+                        self.stop_loss_limit_sell(
+                            float(buyed_price) * ( 1 - self.stop_loss_percent ),
+                            float(buyed_price) * ( 1 - self.stop_loss_percent - 0.005 )
+                        )
+                else:
+                    if not increase_sl:
+                        self.increase_sl()    
         elif 'coin_2_sell_price' in ag_order:
-            self.stop_loss_limit_sell(
-                float(ag_order["coin_2_sell_price"]),
-                float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
-            )
-            
+            if int(position_time) == 499:
+                self.stop_loss_limit_sell(
+                    float(ag_order["coin_2_sell_price"]),
+                    float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
+                )
+            else:
+                self.increase_sl()  
+                
     def increase_sl(self):
         orders = self.get_open_orders()
         if orders:
