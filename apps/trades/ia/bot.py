@@ -362,7 +362,7 @@ class TraderBot(object):
         print(ag_profit)
         print("-------------------------------------------")
         if 'coin_1_sell_quantity' in ag_order:
-            sl = True
+            increase_sl = False
             buyed_price = 0
             try:
                 buy = self.buy_market(float(ag_order["coin_2_buy_price"]))
@@ -371,24 +371,29 @@ class TraderBot(object):
                         buyed_price = float(buy["fills"][-1]["price"])
             except BinanceAPIException as e:
                 if e.code == -2010 and e.message == "Account has insufficient balance for requested action.":
-                    sl = False
+                    self.increase_sl()
+                    increase_sl = True
             finally:
-                if sl and buyed_price >= 0:
-                    try:
-                        self.stop_loss_limit_sell(
-                            float(buyed_price) * ( 1 - self.stop_loss_percent ),
-                            float(buyed_price) * ( 1 - self.stop_loss_percent - 0.005 )
-                        )
-                    except BinanceAPIException as e:
-                        if e.code == -2010 and e.message == "Stop price would trigger immediately.":
-                            self.sell_market(
-                                float(buyed_price)
-                            )
+                if not increase_sl and buyed_price >= 0:
+                    self.stop_loss_limit_sell(
+                        float(buyed_price) * ( 1 - self.stop_loss_percent ),
+                        float(buyed_price) * ( 1 - self.stop_loss_percent - 0.005 )
+                    )
         elif 'coin_2_sell_price' in ag_order:
-            self.cancel_all_open_orders()
             self.stop_loss_limit_sell(
                 float(ag_order["coin_2_sell_price"]),
                 float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
+            )
+            
+    def increase_sl(self):
+        orders = self.get_open_orders()
+        if orders:
+            last_order = orders[-1]
+            stop_price = last_order["stopPrice"] * (1 + self.stop_loss_percent/self.stop_loss_divisor_plus )
+            price = stop_price * (1 - 0.005)
+            self.stop_loss_limit_sell(
+                float(stop_price),
+                float(price)
             )
 
 
@@ -513,6 +518,7 @@ class TraderBot(object):
         return buy
 
     def stop_loss_limit_sell(self, stop, price):
+        self.cancel_all_open_orders()
         print("SL LIMIT PRICE: ", price)
         buy = None
         if price > 0 and stop > 0:
