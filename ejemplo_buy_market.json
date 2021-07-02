@@ -1,0 +1,20 @@
+{'symbol': 'BTCBUSD', 'orderId': 2383154870, 'orderListId': -1, 'clientOrderId': 'gENOtXbWZVbDjrS1p1d7IX', 'transactTime': 1620704583265, 'price': '0.00000000', 'origQty': '0.00020000', 'executedQty': '0.00020000', 'cummulativeQuoteQty': '11.02914600', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'fills': [
+        {'price': '55145.73000000', 'qty': '0.00020000', 'commission': '0.00001306', 'commissionAsset': 'BNB', 'tradeId': 163662828
+        }
+    ]
+}
+[
+    {'symbol': 'BTCBUSD', 'orderId': 1795490356, 'orderListId': -1, 'clientOrderId': 'web_4aafae17454043f3a767ed8bba94d32b', 'price': '51000.00000000', 'origQty': '0.02138300', 'executedQty': '0.02138300', 'cummulativeQuoteQty': '1090.53300000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'BUY', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1614004121829, 'updateTime': 1614004234332, 'isWorking': True, 'origQuoteOrderQty': '0.00000000'
+    },
+    {'symbol': 'BTCBUSD', 'orderId': 1798519437, 'orderListId': -1, 'clientOrderId': 'web_77f568aaa2344a169c6b096a050a061a', 'price': '54460.00000000', 'origQty': '0.02138300', 'executedQty': '0.02138300', 'cummulativeQuoteQty': '1164.52331192', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1614029685752, 'updateTime': 1614029685752, 'isWorking': True, 'origQuoteOrderQty': '0.00000000'
+    },
+    {'symbol': 'BTCBUSD', 'orderId': 2381817858, 'orderListId': -1, 'clientOrderId': 'HRvoNWivaX2KZI18nzukp1', 'price': '0.00000000', 'origQty': '0.00018000', 'executedQty': '0.00018000', 'cummulativeQuoteQty': '10.15585020', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1620693071906, 'updateTime': 1620693071906, 'isWorking': True, 'origQuoteOrderQty': '0.00000000'
+    }
+]
+{'asset': 'BUSD', 'free': '4516.43057736', 'locked': '0.00000000'
+}
+{'asset': 'BTC', 'free': '0.00038000', 'locked': '0.00000000'
+}
+
+{'symbol': 'BTCBUSD', 'orderId': 1795490356, 'orderListId': -1, 'clientOrderId': 'web_4aafae17454043f3a767ed8bba94d32b', 'price': '51000.00000000', 'origQty': '0.02138300', 'executedQty': '0.02138300', 'cummulativeQuoteQty': '1090.53300000', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'BUY', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1614004121829, 'updateTime': 1614004234332, 'isWorking': True, 'origQuoteOrderQty': '0.00000000'
+}
