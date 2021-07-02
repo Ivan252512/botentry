@@ -25,10 +25,22 @@ import traceback
 
 
 class TraderBot(object):
-    def __init__(self, _principal_trade_period):
-        self.money = 2500
-        self.stop_loss_percent = 0.02
-        self.stop_loss_divisor_plus = 2
+    def __init__(self, 
+                 _principal_trade_period, 
+                 _money, 
+                 _sl_percent,
+                 _sl_period,
+                 _population_min,
+                 _population_max,
+                 _individual_dna_length,
+                 _individual_muatition_intensity,
+                 _min_cod_ind_value,
+                 _max_cod_ind_value,
+                 _generations_ind
+        ):
+        self.money = _money
+        self.stop_loss_percent = _sl_percent
+        self.stop_loss_divisor_plus = _sl_period
         self.market = None
         self.periods = ['15m', '1h', '4h', '1d']
         self.trader_class = None
@@ -39,6 +51,14 @@ class TraderBot(object):
         self.pair = None
         self.coin1 = None
         self.coin2 = None
+        self.population_min = _population_min
+        self.population_max = _population_max
+        self.individual_dna_length = _individual_dna_length
+        self.individual_muatition_intensity = _individual_muatition_intensity
+        self.min_cod_ind_value = _min_cod_ind_value
+        self.max_cod_ind_value = _max_cod_ind_value
+        self.generations_ind = _generations_ind
+        
 
     def eval_function_with_genetic_algorithm(self):
         for p in self.periods:
@@ -61,13 +81,13 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=100,
-                    _population_max=500,
-                    _individual_dna_length=12,
+                    _population_min=self.population_min,
+                    _population_max=self.population_max,
+                    _individual_dna_length=self.individual_dna_length,
                     _individual_encoded_variables_quantity=len(environment[0]),
-                    _individual_muatition_intensity=8,
-                    _min_cod_ind_value=-1024,
-                    _max_cod_ind_value=1024,
+                    _individual_muatition_intensity=self.individual_muatition_intensity,
+                    _min_cod_ind_value=self.min_cod_ind_value,
+                    _max_cod_ind_value=self.max_cod_ind_value,
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
                     _stop_loss_divisor_plus=self.stop_loss_divisor_plus
@@ -77,7 +97,7 @@ class TraderBot(object):
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
                     _generations_pob=1,
-                    _generations_ind=1000
+                    _generations_ind=self.generations_ind
                 )
 
                 IndividualModel.objects.create(
@@ -131,23 +151,23 @@ class TraderBot(object):
                 # AG codification
                 self.ag = GeneticAlgorithm(
                     _populations_quantity=1,
-                    _population_min=100,
-                    _population_max=500,
-                    _individual_dna_length=12,
+                    _population_min=self.population_min,
+                    _population_max=self.population_max,
+                    _individual_dna_length=self.individual_dna_length,
                     _individual_encoded_variables_quantity=len(environment[0]),
-                    _individual_muatition_intensity=8,
-                    _min_cod_ind_value=-1024,
-                    _max_cod_ind_value=1024,
+                    _individual_muatition_intensity=self.individual_muatition_intensity,
+                    _min_cod_ind_value=self.min_cod_ind_value,
+                    _max_cod_ind_value=self.max_cod_ind_value,
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
                     _stop_loss_divisor_plus=self.stop_loss_divisor_plus
                 )
 
                 ind_model_object = IndividualModel.objects.filter(
-                    length=12,
+                    length=self.individual_dna_length,
                     encoded_variables_quantity=len(environment[0]),
-                    min_value=-1024,
-                    max_value=1024,
+                    min_value=self.min_cod_ind_value,
+                    max_value=self.max_cod_ind_value,
                     pair=self.pair,
                     temp=self.principal_trade_period
                 ).last()
@@ -345,7 +365,7 @@ class TraderBot(object):
             sl = True
             buyed_price = 0
             try:
-                buy = self.buy_limit(float(ag_order["coin_2_buy_price"]))
+                buy = self.buy_market(float(ag_order["coin_2_buy_price"]))
                 if buy:
                     if buy["fills"]:
                         buyed_price = float(buy["fills"][-1]["price"])
@@ -572,8 +592,36 @@ class TraderBot(object):
 
 
 class BTCBUSDTraderBot(TraderBot):
-    def __init__(self, _principal_trade_period, *args, **kwargs):
-        super().__init__(_principal_trade_period, *args, **kwargs)
+    def __init__(self, 
+                 _principal_trade_period, 
+                 _money, 
+                 _sl_percent,
+                 _sl_period,
+                 _population_min,
+                 _population_max,
+                 _individual_dna_length,
+                 _individual_muatition_intensity,
+                 _min_cod_ind_value,
+                 _max_cod_ind_value,
+                 _generations_ind,
+                 *args, 
+                 **kwargs
+        ):
+        super().__init__(
+            _principal_trade_period, 
+            _money,
+            _sl_percent,
+            _sl_period,
+            _population_min,
+            _population_max,
+            _individual_dna_length,
+            _individual_muatition_intensity,
+            _min_cod_ind_value,
+            _max_cod_ind_value,
+            _generations_ind, 
+            *args, 
+            **kwargs
+        )
         self.trader_class = TraderBTCBUSD
         self.pair = "BTCBUSD"
         self.coin1 = "BUSD"
@@ -581,8 +629,8 @@ class BTCBUSDTraderBot(TraderBot):
 
 
 class ETHBUSDTraderBot(TraderBot):
-    def __init__(self, _principal_trade_period, *args, **kwargs):
-        super().__init__(_principal_trade_period, *args, **kwargs)
+    def __init__(self, _principal_trade_period, _sl_percent, _sl_period, *args, **kwargs):
+        super().__init__(_principal_trade_period, _sl_percent, _sl_period, *args, **kwargs)
         self.trader_class = TraderETHBUSD
         self.pair = "ETHBUSD"
         self.coin1 = "BUSD"

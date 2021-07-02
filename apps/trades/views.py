@@ -16,8 +16,10 @@ from threading import Thread
 import time
 
 import datetime
+import json
 
 # Exchange endpoints
+
 
 def get_products(request):
     if request.method == "GET":
@@ -27,6 +29,7 @@ def get_products(request):
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
 
+
 def get_exchange_info(request):
     if request.method == "GET":
         client = Client()
@@ -35,6 +38,7 @@ def get_exchange_info(request):
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
 
+
 def get_symbol_info(request, symbol):
     if request.method == "GET":
         client = Client()
@@ -42,7 +46,8 @@ def get_symbol_info(request, symbol):
         return JsonResponse({'message': symbol_info}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_ping(request):
     if request.method == "GET":
         client = Client()
@@ -50,17 +55,17 @@ def get_ping(request):
         return JsonResponse({'message': ping}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_server_time(request):
     if request.method == "GET":
         client = Client()
         server_time = client.get_server_time()
         return JsonResponse({'message': server_time}, status=200)
     else:
-        return JsonResponse({'message': 'Metodo no permitido'}, status=405)   
-    
+        return JsonResponse({'message': 'Metodo no permitido'}, status=405)
 
-    
+
 # Market Data endpoints
 
 def get_all_tickers(request):
@@ -70,7 +75,7 @@ def get_all_tickers(request):
         return JsonResponse({'message': all_tickers}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
 
 def get_orderbook_tickers(request):
     if request.method == "GET":
@@ -79,7 +84,8 @@ def get_orderbook_tickers(request):
         return JsonResponse({'message': orderbook_tickers}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_orderbook(request, symbol):
     if request.method == "GET":
         client = Client()
@@ -88,7 +94,8 @@ def get_orderbook(request, symbol):
         return JsonResponse({'message': orderbook}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_recent_trades(request, symbol):
     if request.method == "GET":
         client = Client()
@@ -96,7 +103,8 @@ def get_recent_trades(request, symbol):
         return JsonResponse({'message': recent_trades}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_historical_trades(request, symbol):
     if request.method == "GET":
         client = Client()
@@ -104,7 +112,8 @@ def get_historical_trades(request, symbol):
         return JsonResponse({'message': historical_trades}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_aggregate_trades(request, symbol):
     if request.method == "GET":
         client = Client()
@@ -112,7 +121,8 @@ def get_aggregate_trades(request, symbol):
         return JsonResponse({'message': aggregate_trades}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_klines(request, symbol, interval):
     if request.method == "GET":
         client = Client()
@@ -120,7 +130,8 @@ def get_klines(request, symbol, interval):
         return JsonResponse({'message': klines}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-    
+
+
 def get_historical_klines(request, symbol, interval, start_str, end_str, limit):
     if request.method == "GET":
         client = Client()
@@ -134,8 +145,9 @@ def get_historical_klines(request, symbol, interval, start_str, end_str, limit):
         return JsonResponse({'message': historical_klines}, status=200)
     else:
         return JsonResponse({'message': 'Metodo no permitido'}, status=405)
-       
+
 # User Account
+
 
 def get_account(request):
     if request.method == "GET":
@@ -147,13 +159,34 @@ def get_account(request):
 
 # Bot Endpoints
 
+
 @csrf_exempt
 def train_btc(request):
     print("++++++++++++++++++++++++++++++++++++++++++++")
     print(datetime.datetime.now())
+    fields = [
+        "principal_trade_period",
+        "money",
+        "sl_percent",
+        "sl_period",
+        "population_min",
+        "population_max",
+        "individual_dna_length",
+        "individual_muatition_intensity",
+        "min_cod_ind_value",
+        "max_cod_ind_value",
+        "generations_ind"
+    ]
+    fields_to_func = {}
+    body = json.loads(request.body.decode('utf-8'))
+    for f in fields:
+        if f not in body:
+            return JsonResponse({'message': f'Falta campo {f}'},
+                                status=400)
+        fields_to_func[f"_{f}"] = body[f]
     try:
         btb = BTCBUSDTraderBot(
-            _principal_trade_period="15m"
+            **fields_to_func
         )
         btb.eval_function_with_genetic_algorithm()
         btb.set_info_to_invest()
@@ -163,13 +196,34 @@ def train_btc(request):
         traceback.print_exc()
         return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
 
+
 @csrf_exempt
 def evaluate_btc(request):
     print("++++++++++++++++++++++++++++++++++++++++++++")
     print(datetime.datetime.now())
+    fields = [
+        "principal_trade_period",
+        "money",
+        "sl_percent",
+        "sl_period",
+        "population_min",
+        "population_max",
+        "individual_dna_length",
+        "individual_muatition_intensity",
+        "min_cod_ind_value",
+        "max_cod_ind_value",
+        "generations_ind"
+    ]
+    fields_to_func = {}
+    body = json.loads(request.body.decode('utf-8'))
+    for f in fields:
+        if f not in body:
+            return JsonResponse({'message': f'Falta campo {f}'},
+                                status=400)
+        fields_to_func[f"_{f}"] = body[f]
     try:
         btb = BTCBUSDTraderBot(
-            _principal_trade_period="15m"
+            **fields_to_func
         )
         btb.eval_function_with_genetic_algorithm_last_individual()
         btb.set_info_to_invest()
@@ -179,7 +233,8 @@ def evaluate_btc(request):
     except Exception:
         traceback.print_exc()
         return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
-    
+
+
 def async_evaluate(request):
     minutos = 0
     while True:
@@ -192,10 +247,11 @@ def async_evaluate(request):
         if minutos >= 6 * 4 * 15:
             minutos = 0
         time.sleep(15 * 60)
-        
+
+
 @csrf_exempt
 def async_train(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
             t = Thread(target=train_btc, args=(request, ))
             t.start()
@@ -207,10 +263,9 @@ def async_train(request):
         return JsonResponse({'message': 'Método no permitido'}, status=405)
 
 
-    
 @csrf_exempt
 def run_bot(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
             t = Thread(target=async_evaluate, args=(request, ))
             t.start()
