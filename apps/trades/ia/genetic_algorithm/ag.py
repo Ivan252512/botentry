@@ -29,7 +29,7 @@ class Individual:
                  ):
         self.length = _length
         self.encoded_variables_quantity = _encoded_variables_quantity
-        self.mutation_intensity = _mutation_intensity
+        self.mutation_intensity = _mutation_intensity * _encoded_variables_quantity
         self.dna = _dna if _dna else self.generate_individual(
             self.length,
             self.encoded_variables_quantity
@@ -67,7 +67,7 @@ class Individual:
 
     def mutation(self):
         bin = list(self.dna)
-        for _ in range(int(len(bin)/random.randint(1, self.mutation_intensity))):
+        for _ in range(random.randint(0, self.mutation_intensity)):
             rand = random.randint(0, self.length - 1)
             if(bin[rand] == "0"):
                 bin[rand] = "1"
@@ -494,7 +494,7 @@ class GeneticAlgorithm:
                 self.evaluated.insert(individual.dna, individual.score)
             population.population = individuals
             score = population.calculate_population_score()
-            if gen % 100 == 0:
+            if gen % 1 == 0:
                 print(f"Gen {gen} score: {score} ")
             population.breed()
         return population
@@ -622,7 +622,8 @@ class GeneticAlgorithm:
         return ne if self.__buy_condition(ne) else 0
 
     def __buy_condition(self, _value):
-        return _value[0] > 0.1 and _value[1] < 0.1 and _value[1] < 0
+        # print("VALOR: " , _value, _value[0] > 0.1 and _value[1] < 0.1 and _value[1] < 0)
+        return _value[0] < 0 and _value[1] >= 0 
 
     def __function(self, to_eval):
         lambdas = []
