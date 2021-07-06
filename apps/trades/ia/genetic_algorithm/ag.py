@@ -29,7 +29,7 @@ class Individual:
                  ):
         self.length = _length
         self.encoded_variables_quantity = _encoded_variables_quantity
-        self.mutation_intensity = _mutation_intensity * _encoded_variables_quantity
+        self.mutation_intensity = _mutation_intensity 
         self.dna = _dna if _dna else self.generate_individual(
             self.length,
             self.encoded_variables_quantity

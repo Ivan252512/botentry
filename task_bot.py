@@ -13,16 +13,16 @@ url = "http://127.0.0.1:7000/trades/bot/{}"
 
 payload = json.dumps({
   "principal_trade_period": trade_period,
-  "money": 2200,
+  "money": 2500,
   "sl_percent": 0.02,
   "sl_period": 2,
-  "population_min": 40,
-  "population_max": 80,
+  "population_min": 1000,
+  "population_max": 5000,
   "individual_dna_length": 8,
-  "individual_muatition_intensity": 6,
+  "individual_muatition_intensity": 12,
   "min_cod_ind_value": 1024,
   "max_cod_ind_value": -1024,
-  "generations_ind": 10000
+  "generations_ind": 150
 })
 
 headers = {

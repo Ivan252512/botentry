@@ -201,7 +201,6 @@ def train_btc(request):
         temp=body["principal_trade_period"],
         created_date__gte=last_date
     ).exists()
-    ie = False
     try:
         if not ie:
             btb = BTCBUSDTraderBot(
