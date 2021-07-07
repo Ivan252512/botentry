@@ -14,6 +14,8 @@ class Individual(models.Model):
     pair = models.TextField()
     temp = models.TextField()
     created_date = models.DateTimeField(auto_now=True, auto_now_add=False)
+    percent = models.FloatField()
+    percent_divisor_increment = models.FloatField()
 
 class Trade(models.Model):
     pair = models.TextField()

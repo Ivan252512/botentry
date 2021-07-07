@@ -13,7 +13,7 @@ url = "http://127.0.0.1:7000/trades/bot/{}"
 
 payload = json.dumps({
   "principal_trade_period": trade_period,
-  "money": 2500,
+  "money": 2800,
   "sl_percent": 0.02,
   "sl_period": 2,
   "population_min": 1000,
@@ -51,7 +51,7 @@ if trade_period == "15m":
       schedule.run_pending()
       time.sleep(5)
 elif trade_period == "1h":
-  schedule.every().hour.at(":55").do(evaluate)
+  schedule.every().hour.at(":58").do(evaluate)
   while True:
       schedule.run_pending()
       time.sleep(60)

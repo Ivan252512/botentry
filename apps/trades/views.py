@@ -199,7 +199,9 @@ def train_btc(request):
         max_value=body["max_cod_ind_value"],
         pair="BTCBUSD",
         temp=body["principal_trade_period"],
-        created_date__gte=last_date
+        created_date__gte=last_date,
+        percent=body["percent"],
+        percent_divisor_increment=body["percent_divisor_increment"]
     ).exists()
     try:
         if not ie:

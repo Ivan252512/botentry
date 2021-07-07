@@ -110,6 +110,8 @@ class TraderBot(object):
                     max_value=best.max_value,
                     pair=self.pair,
                     temp=self.principal_trade_period,
+                    percent=self.stop_loss_percent,
+                    percent_divisor_increment=self.stop_loss_divisor_plus
                 )
 
                 last_operation = trader.graphic.process_data_received_ag(
@@ -169,7 +171,9 @@ class TraderBot(object):
                     min_value=self.min_cod_ind_value,
                     max_value=self.max_cod_ind_value,
                     pair=self.pair,
-                    temp=self.principal_trade_period
+                    temp=self.principal_trade_period,
+                    percent=self.stop_loss_percent,
+                    percent_divisor_increment=self.stop_loss_divisor_plus
                 ).last()
 
                 individual = IndividualAG(
