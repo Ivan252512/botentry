@@ -200,9 +200,10 @@ def train_btc(request):
         pair="BTCBUSD",
         temp=body["principal_trade_period"],
         created_date__gte=last_date,
-        percent=body["percent"],
-        percent_divisor_increment=body["percent_divisor_increment"]
+        percent=body["sl_percent"],
+        percent_divisor_increment=body["sl_period"]
     ).exists()
+    ie = False
     try:
         if not ie:
             btb = BTCBUSDTraderBot(
