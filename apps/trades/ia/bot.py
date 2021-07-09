@@ -16,7 +16,8 @@ from apps.trades.ia.genetic_algorithm.ag import GeneticAlgorithm
 from apps.trades.ia.genetic_algorithm.ag import Individual as IndividualAG
 
 from apps.trades.ia.utils.utils import (
-    SimulateMarket
+    SimulateMarket,
+    function_stop_loss
 )
 
 from apps.trades.binance.client import Client

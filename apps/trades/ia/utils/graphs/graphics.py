@@ -240,7 +240,7 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=15,
+                        markersize=10,
                         marker='v',
                         color="green"
                         
@@ -251,7 +251,7 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=15,
+                        markersize=10,
                         marker='^',
                         color="red"
                     )
@@ -266,13 +266,13 @@ class Graphic:
                         color="blue"
                     )
                 )
-            else:
-                subplots.append(
-                    fplt.make_addplot(
-                        self.processed_data[i],
-                        type='line',
-                    )
-                )
+            # else:
+            #     subplots.append(
+            #         fplt.make_addplot(
+            #             self.processed_data[i],
+            #             type='line',
+            #         )
+            #     )
 
         current_date = datetime.datetime.now()
         Path(
@@ -287,15 +287,14 @@ class Graphic:
                 self.trading_interval,
                 current_date.strftime("%m_%d_%Y_%H_%M_%S")
             ),
-            dpi=600,
+            dpi=1200,
         )
 
         lo = ""
         for k in _last_operation.keys():
             if not "balance" in k:
-                if not "position" in k:
-                    if not "stop_loss" in k:
-                        lo += f"{k}: {_last_operation[k]} "
+                if not "stop_loss" in k:
+                    lo += f"{k}: {_last_operation[k]} "
                     
         lo += f"initial: {_initial}, score: {_score} "
         
