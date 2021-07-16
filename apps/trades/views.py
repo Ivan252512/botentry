@@ -5,7 +5,7 @@ from apps.trades.binance.websockets import BinanceSocketManager
 from apps.trades.binance.exceptions import BinanceAPIException
 
 from apps.trades.ia.bot import (
-    BTCBUSDTraderBot
+    TraderBot
 )
 
 from apps.trades.models import Individual as IndividualModel
@@ -23,7 +23,28 @@ import json
 
 from django.utils.timezone import make_aware
 
+from apps.trades.ia.basic_trading.trader import (
+    TraderBTCBUSD,
+    TraderETHBUSD,
+    TraderADABUSD,
+    TraderBNBBUSD,
+    TraderBUSDUSDT
+)
+
 # Exchange endpoints
+
+PAIR_INFO = {
+    "BTCBUSD": {
+        "trader_class": TraderBTCBUSD,
+        "coin1": "BUSD",
+        "coin2": "BTC"
+    },
+    "BNBBUSD": {
+        "trader_class": TraderBNBBUSD,
+        "coin1": "BUSD",
+        "coin2": "BNB"
+    }
+}
 
 
 def get_products(request):
@@ -166,7 +187,7 @@ def get_account(request):
 
 
 @csrf_exempt
-def train_btc(request):
+def train(request):
     print("++++++++++++++++++++++++++++++++++++++++++++")
     print(datetime.datetime.now())
     fields = [
@@ -180,7 +201,8 @@ def train_btc(request):
         "individual_muatition_intensity",
         "min_cod_ind_value",
         "max_cod_ind_value",
-        "generations_ind"
+        "generations_ind",
+        "pair"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
@@ -189,15 +211,20 @@ def train_btc(request):
             return JsonResponse({'message': f'Falta campo {f}'},
                                 status=400)
         fields_to_func[f"_{f}"] = body[f]
+        
+    PIC = PAIR_INFO[fields_to_func["_pair"]]
+    fields_to_func["_trader_class"] = PIC["trader_class"]
+    fields_to_func["_coin1"] = PIC["coin1"]
+    fields_to_func["_coin2"] = PIC["coin2"]
 
     today = make_aware(datetime.datetime.now())
-    last_date = today - datetime.timedelta(days=1)
+    last_date = today - datetime.timedelta(seconds=60 * 60 * 2)
 
     ie = IndividualModel.objects.filter(
         length=body["individual_dna_length"],
         min_value=body["min_cod_ind_value"],
         max_value=body["max_cod_ind_value"],
-        pair="BTCBUSD",
+        pair=body["pair"],
         temp=body["principal_trade_period"],
         created_date__gte=last_date,
         percent=body["sl_percent"],
@@ -205,7 +232,7 @@ def train_btc(request):
     ).exists()
     try:
         if not ie:
-            btb = BTCBUSDTraderBot(
+            btb = TraderBot(
                 **fields_to_func
             )
             btb.eval_function_with_genetic_algorithm()
@@ -219,7 +246,7 @@ def train_btc(request):
 
 
 @csrf_exempt
-def evaluate_btc(request):
+def evaluate(request):
     print("++++++++++++++++++++++++++++++++++++++++++++")
     print(datetime.datetime.now())
     fields = [
@@ -233,7 +260,8 @@ def evaluate_btc(request):
         "individual_muatition_intensity",
         "min_cod_ind_value",
         "max_cod_ind_value",
-        "generations_ind"
+        "generations_ind",
+        "pair"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
@@ -242,8 +270,13 @@ def evaluate_btc(request):
             return JsonResponse({'message': f'Falta campo {f}'},
                                 status=400)
         fields_to_func[f"_{f}"] = body[f]
+        
+    PIC = PAIR_INFO[fields_to_func["_pair"]]
+    fields_to_func["_trader_class"] = PIC["trader_class"]
+    fields_to_func["_coin1"] = PIC["coin1"]
+    fields_to_func["_coin2"] = PIC["coin2"]
     try:
-        btb = BTCBUSDTraderBot(
+        btb = TraderBot(
             **fields_to_func
         )
         btb.eval_function_with_genetic_algorithm_last_individual()
@@ -260,7 +293,7 @@ def async_evaluate(request):
     minutos = 0
     while True:
         try:
-            t = Thread(target=evaluate_btc, args=(request, ))
+            t = Thread(target=evaluate, args=(request, ))
             t.start()
         except Exception:
             traceback.print_exc()
@@ -274,21 +307,7 @@ def async_evaluate(request):
 def async_train(request):
     if request.method == "POST":
         try:
-            t = Thread(target=train_btc, args=(request, ))
-            t.start()
-            return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
-        except Exception:
-            traceback.print_exc()
-            return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
-    else:
-        return JsonResponse({'message': 'Método no permitido'}, status=405)
-
-
-@csrf_exempt
-def run_bot(request):
-    if request.method == "POST":
-        try:
-            t = Thread(target=async_evaluate, args=(request, ))
+            t = Thread(target=train, args=(request, ))
             t.start()
             return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
         except Exception:

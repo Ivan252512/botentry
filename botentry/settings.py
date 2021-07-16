@@ -83,7 +83,7 @@ BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET", None)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get("DATABASE_NAME", None),
+        'NAME': 'trades_test',
         'USER': os.environ.get("DATABASE_USER", None),
         'PASSWORD': os.environ.get("DATABASE_PASSWORD", None),
         'HOST': os.environ.get("DATABASE_HOST", None),

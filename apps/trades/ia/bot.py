@@ -37,21 +37,25 @@ class TraderBot(object):
                  _individual_muatition_intensity,
                  _min_cod_ind_value,
                  _max_cod_ind_value,
-                 _generations_ind
+                 _generations_ind,
+                 _trader_class,
+                 _pair,
+                 _coin1,
+                 _coin2
         ):
         self.money = _money
         self.stop_loss_percent = _sl_percent
         self.stop_loss_divisor_plus = _sl_period
         self.market = None
         self.periods = ['15m', '1h', '4h', '1d']
-        self.trader_class = None
+        self.trader_class = _trader_class
         self.traders_per_period = []
         self.principal_trade_period = _principal_trade_period
         self.info_to_invest = {}
         self.client = Client()
-        self.pair = None
-        self.coin1 = None
-        self.coin2 = None
+        self.pair = _pair
+        self.coin1 = _coin1
+        self.coin2 = _coin2
         self.population_min = _population_min
         self.population_max = _population_max
         self.individual_dna_length = _individual_dna_length
@@ -395,13 +399,14 @@ class TraderBot(object):
                     if not increase_sl:
                         self.increase_sl()    
         elif 'coin_2_sell_price' in ag_order:
-            if int(position_time) == 499:
-                self.stop_loss_limit_sell(
-                    float(ag_order["coin_2_sell_price"]),
-                    float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
-                )
-            else:
-                self.increase_sl()  
+            # if int(position_time) == 499:
+            #     self.stop_loss_limit_sell(
+            #         float(ag_order["coin_2_sell_price"]),
+            #         float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
+            #     )
+            # else:
+            #     self.increase_sl()
+            self.increase_sl()  
                 
     def increase_sl(self):
         orders = self.get_open_orders()
@@ -453,10 +458,10 @@ class TraderBot(object):
             traceback_str = ""
             try:
                 quantity = self.money / price
-                print("BUY MARKET: ", self.pair, round(quantity, 6), quantity)
+                print("BUY MARKET: ", self.pair, round(quantity, 4), quantity)
                 buy = self.client.order_market_buy(
                     symbol=self.pair,
-                    quantity=round(quantity, 6),
+                    quantity=round(quantity, 4),
                 )
             except Exception as e:
                 exception = str(e)
@@ -483,10 +488,10 @@ class TraderBot(object):
             traceback_str = ""
             try:
                 quantity = self.money / price
-                print("SELL MARKET: ", self.pair, round(quantity, 6), quantity)
+                print("SELL MARKET: ", self.pair, round(quantity, 4), quantity)
                 sell = self.client.order_market_sell(
                     symbol=self.pair,
-                    quantity=round(quantity, 6),
+                    quantity=round(quantity, 4),
                 )
             except Exception as e:
                 exception = str(e)
@@ -513,10 +518,10 @@ class TraderBot(object):
             traceback_str = ""
             try:
                 quantity = self.money / price
-                print("BUY LIMIT: ", self.pair, round(quantity, 6), quantity, round(price, 2), price)
+                print("BUY LIMIT: ", self.pair, round(quantity, 4), quantity, round(price, 2), price)
                 buy = self.client.order_limit_buy(
                     symbol=self.pair,
-                    quantity=round(quantity, 6),
+                    quantity=round(quantity, 4),
                     price=round(price, 2)
                 )
             except Exception as e:
@@ -545,10 +550,10 @@ class TraderBot(object):
             traceback_str = ""
             try:
                 quantity = self.money / price
-                print("SL LIMIT: ", self.pair, round(quantity, 6), quantity, round(price, 2), price, round(stop, 2), stop)
+                print("SL LIMIT: ", self.pair, round(quantity, 4), quantity, round(price, 2), price, round(stop, 2), stop)
                 buy = self.client.order_limit_sell_stop_loss(
                     symbol=self.pair,
-                    quantity=round(quantity, 6),
+                    quantity=round(quantity, 4),
                     price=round(price, 2),
                     stopPrice=round(stop, 2)
                 )
@@ -651,29 +656,38 @@ class BTCBUSDTraderBot(TraderBot):
         self.coin1 = "BUSD"
         self.coin2 = "BTC"
 
-
-class ETHBUSDTraderBot(TraderBot):
-    def __init__(self, _principal_trade_period, _sl_percent, _sl_period, *args, **kwargs):
-        super().__init__(_principal_trade_period, _sl_percent, _sl_period, *args, **kwargs)
-        self.trader_class = TraderETHBUSD
-        self.pair = "ETHBUSD"
-        self.coin1 = "BUSD"
-        self.coin2 = "ETH"
-
-
-class ADABUSDTraderBot(TraderBot):
-    def __init__(self, _principal_trade_period, *args, **kwargs):
-        super().__init__(_principal_trade_period, *args, **kwargs)
-        self.trader_class = TraderADABUSD
-        self.pair = "ETHBUSD"
-        self.coin1 = "BUSD"
-        self.coin2 = "ETH"
-
-
 class BNBBUSDTraderBot(TraderBot):
-    def __init__(self, _principal_trade_period, *args, **kwargs):
-        super().__init__(_principal_trade_period, *args, **kwargs)
+    def __init__(self, 
+                 _principal_trade_period, 
+                 _money, 
+                 _sl_percent,
+                 _sl_period,
+                 _population_min,
+                 _population_max,
+                 _individual_dna_length,
+                 _individual_muatition_intensity,
+                 _min_cod_ind_value,
+                 _max_cod_ind_value,
+                 _generations_ind,
+                 *args, 
+                 **kwargs
+        ):
+        super().__init__(
+            _principal_trade_period, 
+            _money,
+            _sl_percent,
+            _sl_period,
+            _population_min,
+            _population_max,
+            _individual_dna_length,
+            _individual_muatition_intensity,
+            _min_cod_ind_value,
+            _max_cod_ind_value,
+            _generations_ind, 
+            *args, 
+            **kwargs
+        )
         self.trader_class = TraderBNBBUSD
-        self.pair = "ETHBUSD"
+        self.pair = "BNBBUSD"
         self.coin1 = "BUSD"
-        self.coin2 = "ETH"
+        self.coin2 = "BNB"

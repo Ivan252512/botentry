@@ -58,8 +58,8 @@ class SimulateBasicWallet:
 class SimulateMarket:
     def __init__(self, _data):
         self.data = _data
-        self.price_column_buy = "open"
-        self.price_column_sell = "open"
+        self.price_column_buy = "low"
+        self.price_column_sell = "low"
 
     def transaction_at_moment_buy_coin2(self, quantity, moment):
         for t_price in self.data[self.price_column_buy]:
