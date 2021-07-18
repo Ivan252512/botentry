@@ -38,6 +38,7 @@ class Individual:
         self.min_value = _min_value
         self.max_value = _max_value
         self.relevant_info = []
+        self.evaluated_function = []
 
     @staticmethod
     @jit(nopython=True)
@@ -239,6 +240,11 @@ class Population:
         self.__order_by_individual_score()
         best_individual = self.population[-1]
         return best_individual.decode_dna_variables_to_decimal()
+    
+    def get_best_individual_evaluated_function(self):
+        self.__order_by_individual_score()
+        best_individual = self.population[-1]
+        return best_individual.evaluated_function
 
     def get_best_individual_score(self):
         self.__order_by_individual_score()
@@ -370,7 +376,8 @@ class GeneticAlgorithm:
         score = best.get_best_individual_score()
         operations = best.get_best_individual_operations()
         best_individual = best.get_best_individual()
-        return score, constants, operations, best_individual
+        evaluated_function = best.get_best_individual_evaluated_function()
+        return score, constants, operations, best_individual, evaluated_function
 
     def __order_by_population_score(self):
         self.populations.sort(key=lambda population: population.score)
@@ -408,8 +415,9 @@ class GeneticAlgorithm:
                 _wallet = SimulateBasicWallet()
                 _wallet.deposit_coin_1(initial_amount)
                 if individual.score == 0:
-                    evaluation = self.__evaluate(
+                    evaluation, evaluated = self.__evaluate(
                         individual, evaluation_intervals)
+                    individual.evaluated_function = evaluated
                     for e in evaluation:
                         if e["buy"]:
                             # print(e)
@@ -514,7 +522,8 @@ class GeneticAlgorithm:
         _wallet = SimulateBasicWallet()
         _wallet.deposit_coin_1(initial_amount)
         if individual.score == 0:
-            evaluation = self.__evaluate(individual, evaluation_intervals)
+            evaluation, evaluated = self.__evaluate(individual, evaluation_intervals)
+            individual.evaluated_function = evaluated
             for e in evaluation:
                 if e["position_time"] < 500:
                     if e["buy"]:
@@ -594,7 +603,8 @@ class GeneticAlgorithm:
                         'buy': self.__buy_condition(regresion_plus_1_val),
                     }
                 )
-        return to_test_2
+            
+        return to_test_2, evaluated
 
         # Toca comprar cuando evaluated tenga algunos valores
 
@@ -623,7 +633,7 @@ class GeneticAlgorithm:
 
     def __buy_condition(self, _value):
         # print("VALOR: " , _value, _value[0] > 0.1 and _value[1] < 0.1 and _value[1] < 0)
-        return _value[0] < 0 and _value[1] >= 0 
+        return  _value[0] < 0 and _value[1] >= 0 
 
     def __function(self, to_eval):
         lambdas = []

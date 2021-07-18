@@ -97,7 +97,7 @@ class TraderBot(object):
                     _stop_loss_percent=self.stop_loss_percent,
                     _stop_loss_divisor_plus=self.stop_loss_divisor_plus
                 )
-                score, constants, operations, best = self.ag.evolution_individual_optimized(
+                score, constants, operations, best, evaluated_function = self.ag.evolution_individual_optimized(
                     _market=self.market,
                     _initial_amount=self.money,
                     _evaluation_intervals=4,
@@ -120,7 +120,9 @@ class TraderBot(object):
                 )
 
                 last_operation = trader.graphic.process_data_received_ag(
-                    operations)
+                    operations,
+                    evaluated_function
+                )
 
                 ag = {
                     'score': score,
@@ -202,7 +204,9 @@ class TraderBot(object):
                 )
 
                 last_operation = trader.graphic.process_data_received_ag(
-                    best.relevant_info)
+                    best.relevant_info,
+                    best.evaluated_function
+                )
 
                 ag = {
                     'score': best.score,
@@ -407,6 +411,19 @@ class TraderBot(object):
             # else:
             #     self.increase_sl()
             self.increase_sl()  
+            
+    def dummie_invest_based_ag(self):
+        ag_order = self.info_to_invest['ag_order']
+        ag_profit = self.info_to_invest['ag_profit']
+        print("-------------------------------------------")
+        print(ag_order)
+        print(ag_profit)
+        print("-------------------------------------------")
+        if not "position_time" in ag_order:
+            return
+        position_time = ag_order['position_time']
+        print("Position time: ", position_time)
+
                 
     def increase_sl(self):
         orders = self.get_open_orders()

@@ -75,7 +75,7 @@ class Graphic:
     def calculate_moving_average(self, _periods):
         self.processed_data['ma_{}'.format(_periods)] = self.processed_data.rolling(window=_periods)['low'].mean()
         self.indicators.append('ma_{}'.format(_periods))
-        self.exclude_to_ag.append('ma_{}'.format(_periods))
+        # self.exclude_to_ag.append('ma_{}'.format(_periods))
         self.graph_ag.append('ma_{}'.format(_periods))
         
     def calculate_exponential_moving_average(self, _periods):
@@ -102,23 +102,26 @@ class Graphic:
         filtered_data_low = gaussian_filter1d(self.processed_data['low'], _sigma_gaussian_filter)
         filtered_data_high = gaussian_filter1d(self.processed_data['high'], _sigma_gaussian_filter)
         self.processed_data['fd_low_{}'.format(_sigma_gaussian_filter)] = filtered_data_low
-        self.not_to_graph_indicators.append('fd_low_{}'.format(_sigma_gaussian_filter))
+        # self.not_to_graph_indicators.append('fd_low_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('fd_low_{}'.format(_sigma_gaussian_filter))
         self.exclude_to_ag.append('fd_low_{}'.format(_sigma_gaussian_filter))
         self.processed_data['d2_low_{}'.format(_sigma_gaussian_filter)] = np.gradient(np.gradient(filtered_data_low))
-        self.not_to_graph_indicators.append('d2_low_{}'.format(_sigma_gaussian_filter))
+        # self.not_to_graph_indicators.append('d2_low_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('d2_low_{}'.format(_sigma_gaussian_filter))
         self.exclude_to_ag.append('d2_low_{}'.format(_sigma_gaussian_filter))
         self.processed_data['fd_high_{}'.format(_sigma_gaussian_filter)] = filtered_data_high
-        self.not_to_graph_indicators.append('fd_high_{}'.format(_sigma_gaussian_filter))
+        # self.not_to_graph_indicators.append('fd_high_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('fd_high_{}'.format(_sigma_gaussian_filter))
         self.exclude_to_ag.append('fd_high_{}'.format(_sigma_gaussian_filter))
         self.processed_data['d2_high_{}'.format(_sigma_gaussian_filter)] = np.gradient(np.gradient(filtered_data_high))
-        self.not_to_graph_indicators.append('d2_high_{}'.format(_sigma_gaussian_filter))
+        # self.not_to_graph_indicators.append('d2_high_{}'.format(_sigma_gaussian_filter))
         self.indicators.append('d2_high_{}'.format(_sigma_gaussian_filter))
         self.exclude_to_ag.append('d2_high_{}'.format(_sigma_gaussian_filter))
         self._put_min_respectly_in_data_df('low', 'd2_low_{}'.format(_sigma_gaussian_filter), _sigma_gaussian_filter)
         self._put_max_respectly_in_data_df('high', 'd2_high_{}'.format(_sigma_gaussian_filter),_sigma_gaussian_filter)
+        for i in self.indicators:
+            if "d2" in i:
+                self.exclude_to_ag.append(i)
         
     def _put_min_respectly_in_data_df(self, _df, _df2, _sigma_gaussian_filter):
         df = self.processed_data
@@ -157,6 +160,8 @@ class Graphic:
         df = self.processed_data.copy()
         result = self.processed_data.copy()
         df.drop(columns=self.exclude_to_ag)
+        print("EXCLUDE")
+        print(self.exclude_to_ag)
         for feature_name in df.columns:
             max_value = df[feature_name].max()
             min_value = df[feature_name].min()
@@ -197,12 +202,33 @@ class Graphic:
                     )
                     count_min += 1
                 else:
-                    subplots.append(
-                        fplt.make_addplot(
-                            self.processed_data[i],
-                            type='line',
+                    if "d2" in i:
+                        subplots.append(
+                            fplt.make_addplot(
+                                self.processed_data[i],
+                                type='scatter',
+                                markersize=0.1,
+                                marker='+'
+                            )
                         )
-                    )
+                    elif "ma" in i:
+                        subplots.append(
+                            fplt.make_addplot(
+                                self.processed_data[i],
+                                type='scatter',
+                                markersize=0.1,
+                                marker='.'
+                            )
+                        )
+                    elif "fr" in i:
+                        subplots.append(
+                            fplt.make_addplot(
+                                self.processed_data[i],
+                                type='scatter',
+                                markersize=0.1,
+                                marker='*'
+                            )
+                        )
                 
         Path(
             "graphics/{}/{}/pd/".format(
@@ -234,6 +260,7 @@ class Graphic:
         
     def graph_for_ag(self, _initial, _score, _last_operation):
         subplots = []
+        print(self.graph_ag)
         for i in self.graph_ag:
             if "sells" in i:
                 subplots.append(
@@ -266,13 +293,41 @@ class Graphic:
                         color="blue"
                     )
                 )
-            # else:
-            #     subplots.append(
-            #         fplt.make_addplot(
-            #             self.processed_data[i],
-            #             type='line',
-            #         )
-            #     )
+            else:
+                if "d2" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=0.1,
+                            marker='+'
+                        )
+                    )
+                elif "ma" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=0.1,
+                            marker='.'
+                        )
+                    )
+                elif "fr" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=0.1,
+                            marker='*'
+                        )
+                    )
+                elif "evaluated_function" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='line'
+                        )
+                    )
 
         current_date = datetime.datetime.now()
         Path(
@@ -312,7 +367,7 @@ class Graphic:
             savefig=save
         ) 
                 
-    def process_data_received_ag(self, data):
+    def process_data_received_ag(self, data, evaluated_function):
         buys = [None for _ in range(self.length)]
         sells = [None for _ in range(self.length)]
         count_sl = 0
@@ -334,7 +389,8 @@ class Graphic:
                 
         self.processed_data['buys'] = buys
         self.processed_data['sells'] = sells
-        self.graph_ag.extend(["sells", "buys"])
+        self.processed_data['evaluated_function'] = evaluated_function
+        self.graph_ag.extend(["sells", "buys", "evaluated_function"])
         
         # operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
         return data[-1] 
