@@ -21,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", None)
+SECRET_KEY = os.environ.get("BOT_ENTRY_DJANGO_SECRET_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -73,8 +73,14 @@ WSGI_APPLICATION = 'botentry.wsgi.application'
 
 # BINANCE VARIABLES
 
-BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY", None)
-BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET", None)
+BINANCE_API_KEY = os.environ.get("BOT_ENTRY_BINANCE_API_KEY", None)
+BINANCE_API_SECRET = os.environ.get("BOT_ENTRY_BINANCE_API_SECRET", None)
+
+# AWS VARIABLES
+
+AWS_ACCESS_KEY_ID = os.environ.get("BOT_ENTRY_AWS_ACCESS_KEY_ID", None)
+AWS_SECRET_ACCESS_KEY = os.environ.get("BOT_ENTRY_AWS_SECRET_ACCESS_KEY", None)
+AWS_BUCKET = os.environ.get("BOT_ENTRY_AWS_BUCKET", None)
 
 
 # Database
@@ -83,10 +89,10 @@ BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET", None)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'trades_test',
-        'USER': os.environ.get("DATABASE_USER", None),
-        'PASSWORD': os.environ.get("DATABASE_PASSWORD", None),
-        'HOST': os.environ.get("DATABASE_HOST", None),
+        'NAME': os.environ.get("BOT_ENTRY_DATABASE_NAME", None),
+        'USER': os.environ.get("BOT_ENTRY_DATABASE_USER", None),
+        'PASSWORD': os.environ.get("BOT_ENTRY_DATABASE_PASSWORD", None),
+        'HOST': os.environ.get("BOT_ENTRY_DATABASE_HOST", None),
         'PORT': '5432',
     }
 }

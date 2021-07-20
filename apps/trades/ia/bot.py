@@ -634,7 +634,7 @@ class TraderBot(object):
             if t['ag']:
                 t['trader'].graphic.graph_for_ag(
                     self.money, t['ag']['score'], t['ag']['last_operation'])
-            t['trader'].graphic.graph()
+            # t['trader'].graphic.graph()
 
 
 class BTCBUSDTraderBot(TraderBot):

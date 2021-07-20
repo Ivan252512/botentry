@@ -3,6 +3,7 @@ import mplfinance as fplt
 import pandas as pd
 import matplotlib.dates as mpdates
 import datetime
+import boto3
 
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
@@ -14,6 +15,9 @@ from pathlib import Path
 from apps.trades.binance.client import Client
 
 import traceback
+import time
+
+from django.conf import settings
 
 # https://www.geeksforgeeks.org/plot-candlestick-chart-using-mplfinance-module-in-python/
 # https://coderzcolumn.com/tutorials/data-science/candlestick-chart-in-python-mplfinance-plotly-bokeh
@@ -243,7 +247,7 @@ class Graphic:
                 self.trading_interval,
                 current_date.strftime("%m_%d_%Y_%H_%M_%S")
             ),
-            dpi=600,
+            dpi=300,
         )
 
         fplt.plot(
@@ -330,6 +334,12 @@ class Graphic:
                     )
 
         current_date = datetime.datetime.now()
+        name_file = current_date.strftime("%m_%d_%Y_%H_%M_%S") + ".png"
+        ubication_file = "graphics/{}/{}/ag/{}".format(
+                self.pair,
+                self.trading_interval,
+                name_file
+            )
         Path(
             "graphics/{}/{}/ag/".format(
                 self.pair,
@@ -337,12 +347,8 @@ class Graphic:
             )
         ).mkdir(parents=True, exist_ok=True)
         save= dict(
-            fname="graphics/{}/{}/ag/{}.png".format(
-                self.pair,
-                self.trading_interval,
-                current_date.strftime("%m_%d_%Y_%H_%M_%S")
-            ),
-            dpi=1200,
+            fname=ubication_file,
+            dpi=300,
         )
 
         lo = ""
@@ -366,6 +372,20 @@ class Graphic:
             addplot=subplots,
             savefig=save
         ) 
+        
+
+        session = boto3.Session(
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        )
+        
+        client = session.client(
+            's3',
+            'us-west-2'
+        )
+
+        client.upload_file(ubication_file, settings.AWS_BUCKET, ubication_file)
+
                 
     def process_data_received_ag(self, data, evaluated_function):
         buys = [None for _ in range(self.length)]

@@ -230,6 +230,7 @@ def train(request):
         percent=body["sl_percent"],
         percent_divisor_increment=body["sl_period"]
     ).exists()
+    ie = False
     try:
         if not ie:
             btb = TraderBot(
