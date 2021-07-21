@@ -1,6 +1,5 @@
 import numpy as np
 import random
-from numba import jit, cuda
 
 from scipy.stats import linregress
 
@@ -41,7 +40,6 @@ class Individual:
         self.evaluated_function = []
 
     @staticmethod
-    @jit(nopython=True)
     def generate_individual(length, encoded_variables_quantity):
         """Generate n bits strings individual
 
@@ -84,7 +82,6 @@ class Individual:
         
 
     @staticmethod
-    @jit(nopython=True)
     def binary_to_decimal(gen, a, b):
         """ Converts binary values into a decimal values with one comma, between 
         [a,b] interval
@@ -109,7 +106,6 @@ class Individual:
         return self.dna
 
 
-@jit(nopython=True)
 def cut_dna(dna, len_interval):
     if len(dna) % len_interval:
         raise Exception("The length of dna must be multiple of len_interval ")

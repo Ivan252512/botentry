@@ -374,17 +374,17 @@ class Graphic:
         ) 
         
 
-        session = boto3.Session(
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        )
-        
-        client = session.client(
-            's3',
-            'us-west-2'
-        )
+        # session = boto3.Session(
+        #     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        #     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        # )
+        # 
+        # client = session.client(
+        #     's3',
+        #     'us-west-2'
+        # )
 
-        client.upload_file(ubication_file, settings.AWS_BUCKET, ubication_file)
+        # client.upload_file(ubication_file, settings.AWS_BUCKET, ubication_file)
 
                 
     def process_data_received_ag(self, data, evaluated_function):

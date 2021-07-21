@@ -25,11 +25,10 @@ llvmlite==0.36.0
 matplotlib==3.4.1
 mccabe==0.6.1
 mplfinance==0.12.7a12
-numba==0.53.1
 numpy==1.20.2
 pandas==1.2.4
 Pillow==8.2.0
-psycopg2==2.8.6
+psycopg2-binary==2.9.1
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycodestyle==2.7.0

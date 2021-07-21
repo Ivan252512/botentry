@@ -289,19 +289,18 @@ def evaluate(request):
         traceback.print_exc()
         return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
 
-
+@csrf_exempt
 def async_evaluate(request):
-    minutos = 0
-    while True:
+    if request.method == "POST":
         try:
             t = Thread(target=evaluate, args=(request, ))
             t.start()
+            return JsonResponse({'message': "Evaluacion exitosa"}, status=200)
         except Exception:
             traceback.print_exc()
-        minutos += 15
-        if minutos >= 6 * 4 * 15:
-            minutos = 0
-        time.sleep(15 * 60)
+            return JsonResponse({'message': "Evaluacion fallida"}, status=500)
+    else:
+        return JsonResponse({'message': 'Método no permitido'}, status=405)
 
 
 @csrf_exempt
