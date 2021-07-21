@@ -11,19 +11,19 @@ trade_period = "15m"
 
 url = "http://127.0.0.1:7000/trades/bot/{}"
 
-url8000 = "http://127.0.0.1:8000/trades/bot/{}"
+url8000 = "http://127.0.0.1:8001/trades/bot/{}"
 
 payload = json.dumps({
   "principal_trade_period": trade_period,
-  "money": 4000,
+  "money": 3500,
   "sl_percent": 0.015,
   "sl_period": 3,
   "population_min": 50,
   "population_max": 100,
   "individual_dna_length": 12,
   "individual_muatition_intensity": 180,
-  "min_cod_ind_value": 4096,
-  "max_cod_ind_value": 0,
+  "min_cod_ind_value": 0,
+  "max_cod_ind_value": 4096,
   "generations_ind": 1000,
   "pair": "BNBBUSD"
 })

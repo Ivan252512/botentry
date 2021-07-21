@@ -218,7 +218,7 @@ def train(request):
     fields_to_func["_coin2"] = PIC["coin2"]
 
     today = make_aware(datetime.datetime.now())
-    last_date = today - datetime.timedelta(days=1)
+    last_date = today - datetime.timedelta(seconds=60 * 60 * 6)
 
     ie = IndividualModel.objects.filter(
         length=body["individual_dna_length"],
@@ -230,7 +230,6 @@ def train(request):
         percent=body["sl_percent"],
         percent_divisor_increment=body["sl_period"]
     ).exists()
-    ie = False
     try:
         if not ie:
             btb = TraderBot(
