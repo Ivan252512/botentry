@@ -20,10 +20,10 @@ class Trader:
             self.coin2: self.client.get_asset_balance(asset=self.coin2)["free"]
         }
 
-    def get_pair_klines_info(self):
+    def get_pair_klines_info(self, _periods):
         klines = self.client.get_klines(
             symbol=self.pair,
-            limit=500,
+            limit=_periods,
             interval=self.trading_interval
         )
         return klines
@@ -47,17 +47,17 @@ class Trader:
             symbol=self.pair
         )
         
-    def prepare_data(self, _graphic=True):
-        klines = self.get_pair_klines_info()
+    def prepare_data(self, _periods, _graphic=True):
+        klines = self.get_pair_klines_info(_periods)
         self.graphic = Graphic(
             _raw_data=klines, 
             _pair=self.pair, 
             _trading_interval=self.trading_interval
         )
         self.graphic.process_data()
-        self.graphic.calculate_moving_average(_periods=7)
-        self.graphic.calculate_moving_average(_periods=25)
-        self.graphic.calculate_moving_average(_periods=99)
+        self.graphic.calculate_moving_average(_periods=5)
+        self.graphic.calculate_moving_average(_periods=10)
+        self.graphic.calculate_moving_average(_periods=20)
         self.graphic.calculate_fibonacci_retracement()
         for i in range(3, 9, 3):
             self.graphic.get_second_derivative(_sigma_gaussian_filter=i)
@@ -128,6 +128,19 @@ class TraderADABUSD(Trader):
             _c1="ADA",
             _c2="BUSD",
             _pair="ADABUSD",
+            _trading_interval=_trading_interval,
+            _money=_money,
+            *args, 
+            **kwargs
+        )
+        
+class TraderSHIBBUSD(Trader):
+    
+    def __init__(self, _trading_interval, _money, *args, **kwargs):
+        super().__init__(
+            _c1="SHIB",
+            _c2="BUSD",
+            _pair="SHIBBUSD",
             _trading_interval=_trading_interval,
             _money=_money,
             *args, 

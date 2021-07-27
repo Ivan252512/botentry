@@ -288,6 +288,7 @@ class GeneticAlgorithm:
         self.individual_encoded_variables_quantity = _individual_encoded_variables_quantity
         self.individual_muatition_intensity = _individual_muatition_intensity
         self.environment = _environment
+        self.periods_environment = len(_environment)
         self.min_ag_dna_val = _min_cod_ind_value
         self.max_ag_dna_val = _max_cod_ind_value
         self.individual_encoded_variables_quantity = _individual_encoded_variables_quantity
@@ -449,7 +450,7 @@ class GeneticAlgorithm:
                                     if _wallet.sell_coin_2(coin_1_quantity, coin_2_quantity):
                                         individual.add_relevant_info({
                                             'coin_1_buy_quantity': coin_1_quantity,
-                                            'coin_2_sell_quantity': coin_2_quantity,
+                                            'coin_2_sell_quantity': sl,
                                             'coin_2_sell_price': coin_2_price,
                                             'position_time': e['position_time'],
                                             'balance_coin_1': _wallet.get_balance_in_coin1(),
@@ -458,7 +459,7 @@ class GeneticAlgorithm:
                                         #print("vende: ", individual.relevant_info)
                             else:
                                 individual.relevant_info[-1]["stop_loss"].append(
-                                    individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_percent/sl_divisor_plus)))
+                                    individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_divisor_plus)))
                                 #print("aumenta stop loss: ", individual.relevant_info)
                     total_earn = _wallet.get_total_balance_in_coin1(
                         market.get_last_price())
@@ -478,7 +479,7 @@ class GeneticAlgorithm:
         population = _data['population']
 
         for gen in range(generations):
-            t = Pool(processes=12)
+            t = Pool(processes=24)
             data = []
             for individual in population.population:
                 exists_tree, val_tree = self.evaluated.search(individual.dna)
@@ -521,7 +522,7 @@ class GeneticAlgorithm:
             evaluation, evaluated = self.__evaluate(individual, evaluation_intervals)
             individual.evaluated_function = evaluated
             for e in evaluation:
-                if e["position_time"] < 500:
+                if e["position_time"] < self.periods_environment:
                     if e["buy"]:
                         # print(e)
                         coin_1_quantity = _wallet.get_balance_in_coin1()
@@ -565,7 +566,7 @@ class GeneticAlgorithm:
                                     #print("vende: ", individual.relevant_info)
                         else:
                             individual.relevant_info[-1]["stop_loss"].append(
-                                individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_percent/sl_divisor_plus)))
+                                individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_divisor_plus)))
                             #print("aumenta stop loss: ", individual.relevant_info)
             total_earn = _wallet.get_total_balance_in_coin1(
                 market.get_last_price())
@@ -588,7 +589,7 @@ class GeneticAlgorithm:
                 count_var += 1
             evaluated.append(self.__function(to_evaluation))
             le = len(evaluated)
-            if le > _evaluation_intervals and le + _evaluation_intervals <= lse:
+            if le > _evaluation_intervals and le + _evaluation_intervals <= lse: #TODO MAGIA
                 e = evaluated[-_evaluation_intervals:]
                 regresion_plus_1_val = self.__linear_regresion_of_evaluated_interval_n_plus_1(
                     e)
@@ -610,14 +611,14 @@ class GeneticAlgorithm:
 
     def __linear_regresion_of_evaluated_interval_n_plus_1(self, _evaluated_interval):
         t = [i for i in range(len(_evaluated_interval))]
-        middle_index = int(len(_evaluated_interval) / 2)
+        middle_index = int(len(_evaluated_interval) / 4)
         reg_1 = linregress(
-            x=t[:middle_index],
-            y=_evaluated_interval[:middle_index]
+            x=t[:middle_index * 3],
+            y=_evaluated_interval[:middle_index * 3]
         )
         reg_2 = linregress(
-            x=t[middle_index:],
-            y=_evaluated_interval[middle_index:]
+            x=t[middle_index * 3:],
+            y=_evaluated_interval[middle_index * 3:]
         )
         return reg_1[0], reg_2[0]
 

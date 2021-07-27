@@ -15,7 +15,7 @@ class SimulateBasicWallet:
     def buy_coin_2(self, _quantity_sell_coin_1, _quantity_buy_coin_2):
         if _quantity_sell_coin_1 > 0 and self.__coin_1_balance >= _quantity_sell_coin_1:
             self.__coin_1_balance -= _quantity_sell_coin_1
-            self.__coin_2_balance += _quantity_buy_coin_2
+            self.__coin_2_balance += _quantity_buy_coin_2 * (1 - 0.001)
             return True
         return False
 
@@ -25,7 +25,7 @@ class SimulateBasicWallet:
     def sell_coin_2(self, _quantity_buy_coin_1, _quantity_sell_coin_2):
         if _quantity_sell_coin_2 > 0 and self.__coin_2_balance >= _quantity_sell_coin_2:
             self.__coin_2_balance -= _quantity_sell_coin_2
-            self.__coin_1_balance += _quantity_buy_coin_1
+            self.__coin_1_balance += _quantity_buy_coin_1 * (1 - 0.001)
             return True
         return False
 
@@ -58,7 +58,7 @@ class SimulateBasicWallet:
 class SimulateMarket:
     def __init__(self, _data):
         self.data = _data
-        self.price_column_buy = "low"
+        self.price_column_buy = "open"
         self.price_column_sell = "low"
 
     def transaction_at_moment_buy_coin2(self, quantity, moment):
@@ -80,4 +80,4 @@ class SimulateMarket:
 
 
 def function_stop_loss(prices, sl_percent, sl_divisor):
-    return prices[-1] * (1 + (sl_percent / sl_divisor))
+    return prices[-1] * (1 + (sl_divisor))

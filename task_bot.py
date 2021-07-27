@@ -15,13 +15,13 @@ url8000 = "http://127.0.0.1:8001/trades/bot/{}"
 
 payload = json.dumps({
   "principal_trade_period": trade_period,
-  "money": 3500,
-  "sl_percent": 0.015,
-  "sl_period": 3,
+  "money": 3700,
+  "sl_percent": 0.01,
+  "sl_period": 0.002,
   "population_min": 50,
   "population_max": 100,
   "individual_dna_length": 12,
-  "individual_muatition_intensity": 180,
+  "individual_muatition_intensity": 360,
   "min_cod_ind_value": 0,
   "max_cod_ind_value": 4096,
   "generations_ind": 1000,
@@ -44,12 +44,12 @@ def evaluate_15():
   n = datetime.now()
   t = n.timetuple()
   y, m, d, h, min, sec, wd, yd, i = t
-  if ((min + 1) % 15) == 0: 
+  if ((min ) % 15) == 0: 
     requests.request("POST", url.format("evaluate"), headers=headers, data=payload) 
   
 
 if trade_period == "15m":
-  schedule.every().minute.at(":10").do(evaluate_15)
+  schedule.every().minute.at(":03").do(evaluate_15)
   schedule.every().hour.at(":01").do(train)
   while True:
       schedule.run_pending()

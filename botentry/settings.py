@@ -92,7 +92,7 @@ DATABASES = {
         'NAME': os.environ.get("BOT_ENTRY_DATABASE_NAME", None),
         'USER': os.environ.get("BOT_ENTRY_DATABASE_USER", None),
         'PASSWORD': os.environ.get("BOT_ENTRY_DATABASE_PASSWORD", None),
-        'HOST': os.environ.get("BOT_ENTRY_DATABASE_HOST", None),
+        'HOST': 'localhost', #os.environ.get("BOT_ENTRY_DATABASE_HOST", None),
         'PORT': '5432',
     }
 }

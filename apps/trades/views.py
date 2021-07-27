@@ -28,7 +28,8 @@ from apps.trades.ia.basic_trading.trader import (
     TraderETHBUSD,
     TraderADABUSD,
     TraderBNBBUSD,
-    TraderBUSDUSDT
+    TraderBUSDUSDT,
+    TraderSHIBBUSD
 )
 
 # Exchange endpoints
@@ -43,6 +44,26 @@ PAIR_INFO = {
         "trader_class": TraderBNBBUSD,
         "coin1": "BUSD",
         "coin2": "BNB"
+    },
+    "ETHBUSD": {
+        "trader_class": TraderETHBUSD,
+        "coin1": "BUSD",
+        "coin2": "ETH"
+    },
+    "ADABUSD": {
+        "trader_class": TraderADABUSD,
+        "coin1": "BUSD",
+        "coin2": "ADA"
+    },
+    "BUSDUSDT": {
+        "trader_class": TraderBUSDUSDT,
+        "coin1": "BUSD",
+        "coin2": "USDT"
+    },
+    "SHIBBUSD": {
+        "trader_class": TraderSHIBBUSD,
+        "coin1": "BUSD",
+        "coin2": "SHIB"
     }
 }
 
@@ -202,7 +223,8 @@ def train(request):
         "min_cod_ind_value",
         "max_cod_ind_value",
         "generations_ind",
-        "pair"
+        "pair",
+        "periods_environment"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
@@ -230,6 +252,7 @@ def train(request):
         percent=body["sl_percent"],
         percent_divisor_increment=body["sl_period"]
     ).exists()
+    ie = False
     try:
         if not ie:
             btb = TraderBot(
@@ -261,7 +284,8 @@ def evaluate(request):
         "min_cod_ind_value",
         "max_cod_ind_value",
         "generations_ind",
-        "pair"
+        "pair",
+        "periods_environment"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))

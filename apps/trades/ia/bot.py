@@ -41,7 +41,8 @@ class TraderBot(object):
                  _trader_class,
                  _pair,
                  _coin1,
-                 _coin2
+                 _coin2,
+                 _periods_environment
         ):
         self.money = _money
         self.stop_loss_percent = _sl_percent
@@ -63,6 +64,7 @@ class TraderBot(object):
         self.min_cod_ind_value = _min_cod_ind_value
         self.max_cod_ind_value = _max_cod_ind_value
         self.generations_ind = _generations_ind
+        self.periods_environment = _periods_environment
         
 
     def eval_function_with_genetic_algorithm(self):
@@ -71,7 +73,7 @@ class TraderBot(object):
                 _trading_interval=p,
                 _money=self.money
             )
-            trader.prepare_data(_graphic=False)
+            trader.prepare_data(_periods=self.periods_environment, _graphic=False)
             data = trader.graphic.get_processed_data()
             ag = {}
             if p == self.principal_trade_period:
@@ -100,7 +102,7 @@ class TraderBot(object):
                 score, constants, operations, best, evaluated_function = self.ag.evolution_individual_optimized(
                     _market=self.market,
                     _initial_amount=self.money,
-                    _evaluation_intervals=4,
+                    _evaluation_intervals=8,
                     _generations_pob=1,
                     _generations_ind=self.generations_ind
                 )
@@ -145,7 +147,7 @@ class TraderBot(object):
                 _trading_interval=p,
                 _money=self.money
             )
-            trader.prepare_data(_graphic=False)
+            trader.prepare_data(_periods=self.periods_environment, _graphic=False)
             data = trader.graphic.get_processed_data()
             ag = {}
             if p == self.principal_trade_period:
@@ -195,7 +197,7 @@ class TraderBot(object):
                 data = {
                     "market": self.market,
                     "initial_amount": self.money,
-                    "evaluation_intervals": 4,
+                    "evaluation_intervals": 8,
                     "individual": individual
                 }
 
@@ -241,9 +243,9 @@ class TraderBot(object):
         ag_order = ""
         ag_profit = 0
         relevant_info = {
-            "ma_7": 0,
-            "ma_25": 0,
-            "ma_99": 0,
+            "ma_5": 0,
+            "ma_10": 0,
+            "ma_20": 0,
             "fb_023": 0,
             "fb_038": 0,
             "fb_050": 0,
@@ -262,12 +264,12 @@ class TraderBot(object):
             ag_order = info_15m['ag']['last_operation']
             ag_profit = info_15m['ag']['score']
         relevant_info_15m = relevant_info.copy()
-        relevant_info_15m["ma_7"] = info_15m['trader'].graphic.get_last_ma_period(
-            7)
-        relevant_info_15m["ma_25"] = info_15m['trader'].graphic.get_last_ma_period(
-            25)
-        relevant_info_15m["ma_99"] = info_15m['trader'].graphic.get_last_ma_period(
-            99)
+        relevant_info_15m["ma_5"] = info_15m['trader'].graphic.get_last_ma_period(
+            5)
+        relevant_info_15m["ma_10"] = info_15m['trader'].graphic.get_last_ma_period(
+            10)
+        relevant_info_15m["ma_20"] = info_15m['trader'].graphic.get_last_ma_period(
+            20)
         fibos = info_15m['trader'].graphic.get_fibos()
         relevant_info_15m["fb_023"] = fibos[0]
         relevant_info_15m["fb_038"] = fibos[1]
@@ -287,12 +289,12 @@ class TraderBot(object):
             ag_order = info_1h['ag']['last_operation']
             ag_profit = info_1h['ag']['score']
         relevant_info_1h = relevant_info.copy()
-        relevant_info_1h["ma_7"] = info_1h['trader'].graphic.get_last_ma_period(
-            7)
-        relevant_info_1h["ma_25"] = info_1h['trader'].graphic.get_last_ma_period(
-            25)
-        relevant_info_1h["ma_99"] = info_1h['trader'].graphic.get_last_ma_period(
-            99)
+        relevant_info_1h["ma_5"] = info_1h['trader'].graphic.get_last_ma_period(
+            5)
+        relevant_info_1h["ma_10"] = info_1h['trader'].graphic.get_last_ma_period(
+            10)
+        relevant_info_1h["ma_20"] = info_1h['trader'].graphic.get_last_ma_period(
+            20)
         fibos = info_1h['trader'].graphic.get_fibos()
         relevant_info_1h["fb_023"] = fibos[0]
         relevant_info_1h["fb_038"] = fibos[1]
@@ -312,12 +314,12 @@ class TraderBot(object):
             ag_order = info_4h['ag']['last_operation']
             ag_profit = info_4h['ag']['score']
         relevant_info_4h = relevant_info.copy()
-        relevant_info_4h["ma_7"] = info_4h['trader'].graphic.get_last_ma_period(
-            7)
-        relevant_info_4h["ma_25"] = info_4h['trader'].graphic.get_last_ma_period(
-            25)
-        relevant_info_4h["ma_99"] = info_4h['trader'].graphic.get_last_ma_period(
-            99)
+        relevant_info_4h["ma_5"] = info_4h['trader'].graphic.get_last_ma_period(
+            5)
+        relevant_info_4h["ma_10"] = info_4h['trader'].graphic.get_last_ma_period(
+            10)
+        relevant_info_4h["ma_20"] = info_4h['trader'].graphic.get_last_ma_period(
+            20)
         fibos = info_4h['trader'].graphic.get_fibos()
         relevant_info_4h["fb_023"] = fibos[0]
         relevant_info_4h["fb_038"] = fibos[1]
@@ -337,12 +339,12 @@ class TraderBot(object):
             ag_order = info_1d['ag']['last_operation']
             ag_profit = info_1d['ag']['score']
         relevant_info_1d = relevant_info.copy()
-        relevant_info_1d["ma_7"] = info_1d['trader'].graphic.get_last_ma_period(
-            7)
-        relevant_info_1d["ma_25"] = info_1d['trader'].graphic.get_last_ma_period(
-            25)
-        relevant_info_1d["ma_99"] = info_1d['trader'].graphic.get_last_ma_period(
-            99)
+        relevant_info_1d["ma_5"] = info_1d['trader'].graphic.get_last_ma_period(
+            5)
+        relevant_info_1d["ma_10"] = info_1d['trader'].graphic.get_last_ma_period(
+            10)
+        relevant_info_1d["ma_20"] = info_1d['trader'].graphic.get_last_ma_period(
+            20)
         fibos = info_1d['trader'].graphic.get_fibos()
         relevant_info_1d["fb_023"] = fibos[0]
         relevant_info_1d["fb_038"] = fibos[1]
@@ -383,7 +385,7 @@ class TraderBot(object):
             increase_sl = False
             buyed_price = 0
             try:
-                if int(position_time) == 499:
+                if int(position_time) >= self.periods_environment - 2:
                     buy = self.buy_market(float(ag_order["coin_2_buy_price"]))
                     if buy:
                         if buy["fills"]:
@@ -393,7 +395,7 @@ class TraderBot(object):
                     self.increase_sl()
                     increase_sl = True
             finally:
-                if int(position_time) == 499:
+                if int(position_time) >= self.periods_environment - 2:
                     if not increase_sl and buyed_price >= 0:
                         self.stop_loss_limit_sell(
                             float(buyed_price) * ( 1 - self.stop_loss_percent ),
@@ -403,7 +405,7 @@ class TraderBot(object):
                     if not increase_sl:
                         self.increase_sl()    
         elif 'coin_2_sell_price' in ag_order:
-            # if int(position_time) == 499:
+            # if int(position_time) == 498:
             #     self.stop_loss_limit_sell(
             #         float(ag_order["coin_2_sell_price"]),
             #         float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
@@ -429,7 +431,7 @@ class TraderBot(object):
         orders = self.get_open_orders()
         if orders:
             last_order = orders[-1]
-            stop_price = float(last_order["stopPrice"]) * (1 + float(self.stop_loss_percent)/float(self.stop_loss_divisor_plus))
+            stop_price = float(last_order["stopPrice"]) * (1 + float(self.stop_loss_divisor_plus))
             price = stop_price * (1 - 0.005)
             self.stop_loss_limit_sell(
                 float(stop_price),

@@ -74,6 +74,9 @@ class Graphic:
         df2 = df.set_index(datetime_index)
         df2.drop('date', axis=1, inplace=True)
         
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        #     print(df2)
+        
         self.processed_data = df2
         
     def calculate_moving_average(self, _periods):
@@ -388,8 +391,8 @@ class Graphic:
 
                 
     def process_data_received_ag(self, data, evaluated_function):
-        buys = [None for _ in range(self.length)]
-        sells = [None for _ in range(self.length)]
+        buys = [np.nan for _ in range(self.length)]
+        sells = [np.nan for _ in range(self.length)]
         count_sl = 0
         for d in data:
             if d['position_time'] < self.length:
