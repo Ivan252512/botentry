@@ -102,7 +102,7 @@ class TraderBot(object):
                 score, constants, operations, best, evaluated_function = self.ag.evolution_individual_optimized(
                     _market=self.market,
                     _initial_amount=self.money,
-                    _evaluation_intervals=8,
+                    _evaluation_intervals=12,
                     _generations_pob=1,
                     _generations_ind=self.generations_ind
                 )
@@ -197,7 +197,7 @@ class TraderBot(object):
                 data = {
                     "market": self.market,
                     "initial_amount": self.money,
-                    "evaluation_intervals": 8,
+                    "evaluation_intervals": 12,
                     "individual": individual
                 }
 

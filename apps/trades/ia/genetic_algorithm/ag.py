@@ -411,7 +411,7 @@ class GeneticAlgorithm:
                 individual = population.population[population_length]
                 _wallet = SimulateBasicWallet()
                 _wallet.deposit_coin_1(initial_amount)
-                if individual.score == 0:
+                if True: #individual.score == 0:
                     evaluation, evaluated = self.__evaluate(
                         individual, evaluation_intervals)
                     individual.evaluated_function = evaluated
@@ -479,7 +479,7 @@ class GeneticAlgorithm:
         population = _data['population']
 
         for gen in range(generations):
-            t = Pool(processes=24)
+            t = Pool(processes=12)
             data = []
             for individual in population.population:
                 exists_tree, val_tree = self.evaluated.search(individual.dna)
@@ -507,7 +507,7 @@ class GeneticAlgorithm:
     def optimized_individual_function(self, _data):
         individual = _data['individual']     
         
-        if individual.score != 0:
+        if individual.score != 0 and individual.relevant_info:
             return individual
           
         market = _data['market']
@@ -518,7 +518,7 @@ class GeneticAlgorithm:
 
         _wallet = SimulateBasicWallet()
         _wallet.deposit_coin_1(initial_amount)
-        if individual.score == 0:
+        if individual.score == 0 or not individual.relevant_info:
             evaluation, evaluated = self.__evaluate(individual, evaluation_intervals)
             individual.evaluated_function = evaluated
             for e in evaluation:
@@ -540,34 +540,46 @@ class GeneticAlgorithm:
                                     'stop_loss': [coin_2_price * (1 - sl_percent)]
                                 })
                                 #print("compra", individual.relevant_info)
-                    if len(individual.relevant_info) > 0 and "coin_1_sell_quantity" in individual.relevant_info[-1]:
-                        _, coin_2_last_price_price = market.transaction_at_moment_sell_coin2(
-                            0, e['position_time'])
-                        sl = individual.relevant_info[-1]["stop_loss"][-1]
-                        if coin_2_last_price_price < sl:
-                            coin_2_quantity = _wallet.get_balance_in_coin2()
-                            if coin_2_quantity > 0:
-                                coin_1_quantity_market, coin_2_price_market = market.transaction_at_moment_sell_coin2(
-                                    coin_2_quantity, e['position_time'])
-                                coin_2_price_sl = individual.relevant_info[-1]["stop_loss"][-1]
-                                coin_1_quantity_sl = coin_2_price_sl * coin_2_quantity
-                                coin_2_price = coin_2_price_sl if coin_2_price_sl < coin_2_price_market else coin_2_price_market
-                                coin_1_quantity = coin_1_quantity_sl if coin_2_price_sl < coin_2_price_market else coin_1_quantity_market
-                                # self.individual_relevant_info:
-                                if _wallet.sell_coin_2(coin_1_quantity, coin_2_quantity):
-                                    individual.add_relevant_info({
-                                        'coin_1_buy_quantity': coin_1_quantity,
-                                        'coin_2_sell_quantity': coin_2_quantity,
-                                        'coin_2_sell_price': coin_2_price,
-                                        'position_time': e['position_time'],
-                                        'balance_coin_1': _wallet.get_balance_in_coin1(),
-                                        'balance_coin_2': _wallet.get_balance_in_coin2()
-                                    })
-                                    #print("vende: ", individual.relevant_info)
-                        else:
-                            individual.relevant_info[-1]["stop_loss"].append(
-                                individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_divisor_plus)))
-                            #print("aumenta stop loss: ", individual.relevant_info)
+                    if e["sell"]:
+                        coin_2_quantity = _wallet.get_balance_in_coin2()
+                        if coin_2_quantity > 0:
+                            coin_1_quantity_market, coin_2_price_market = market.transaction_at_moment_sell_coin2(
+                                coin_2_quantity, e['position_time'])
+                            # self.individual_relevant_info:
+                            if _wallet.sell_coin_2(coin_1_quantity_market, coin_2_quantity):
+                                individual.add_relevant_info({
+                                    'coin_1_buy_quantity': coin_1_quantity_market,
+                                    'coin_2_sell_quantity': coin_2_quantity,
+                                    'coin_2_sell_price': coin_2_price_market,
+                                    'position_time': e['position_time'],
+                                    'balance_coin_1': _wallet.get_balance_in_coin1(),
+                                    'balance_coin_2': _wallet.get_balance_in_coin2()
+                                })
+                    else:
+                        if len(individual.relevant_info) > 0 and "coin_1_sell_quantity" in individual.relevant_info[-1]:
+                            _, coin_2_last_price_price = market.transaction_at_moment_sell_coin2(
+                                0, e['position_time'])
+                            sl = individual.relevant_info[-1]["stop_loss"][-1]
+                            if coin_2_last_price_price < sl:
+                                coin_2_quantity = _wallet.get_balance_in_coin2()
+                                if coin_2_quantity > 0:
+                                    coin_1_quantity_market, coin_2_price_market = market.transaction_at_moment_sell_coin2(
+                                        coin_2_quantity, e['position_time'])
+                                    # self.individual_relevant_info:
+                                    if _wallet.sell_coin_2(coin_1_quantity_market, coin_2_quantity):
+                                        individual.add_relevant_info({
+                                            'coin_1_buy_quantity': coin_1_quantity_market,
+                                            'coin_2_sell_quantity': coin_2_quantity,
+                                            'coin_2_sell_price': coin_2_price_market,
+                                            'position_time': e['position_time'],
+                                            'balance_coin_1': _wallet.get_balance_in_coin1(),
+                                            'balance_coin_2': _wallet.get_balance_in_coin2()
+                                        })
+                                        #print("vende: ", individual.relevant_info)
+                            else:
+                                individual.relevant_info[-1]["stop_loss"].append(
+                                    individual.relevant_info[-1]["stop_loss"][-1] * (1 + (sl_divisor_plus)))
+                                #print("aumenta stop loss: ", individual.relevant_info)
             total_earn = _wallet.get_total_balance_in_coin1(
                 market.get_last_price())
             score = total_earn if total_earn != initial_amount else -1
@@ -577,7 +589,6 @@ class GeneticAlgorithm:
     def __evaluate(self, individual, _evaluation_intervals):
         ag_variables = individual.decode_dna_variables_to_decimal()
         evaluated = []
-        lse = len(self.environment)
         to_test_2 = []
         for temp in self.environment:
             to_evaluation = []
@@ -587,9 +598,9 @@ class GeneticAlgorithm:
                     (var, ag_variables[count_var])
                 )
                 count_var += 1
-            evaluated.append(self.__function(to_evaluation))
+            evaluated.append(self.__simplified_function(to_evaluation))
             le = len(evaluated)
-            if le > _evaluation_intervals and le + _evaluation_intervals <= lse: #TODO MAGIA
+            if le > _evaluation_intervals: #TODO MAGIA
                 e = evaluated[-_evaluation_intervals:]
                 regresion_plus_1_val = self.__linear_regresion_of_evaluated_interval_n_plus_1(
                     e)
@@ -598,6 +609,7 @@ class GeneticAlgorithm:
                         'position_time': le + _evaluation_intervals + 1,
                         'regresion_plus_1_val': regresion_plus_1_val,
                         'buy': self.__buy_condition(regresion_plus_1_val),
+                        'sell': self.__sell_condition(regresion_plus_1_val),
                     }
                 )
             
@@ -611,16 +623,17 @@ class GeneticAlgorithm:
 
     def __linear_regresion_of_evaluated_interval_n_plus_1(self, _evaluated_interval):
         t = [i for i in range(len(_evaluated_interval))]
-        middle_index = int(len(_evaluated_interval) / 4)
+        # middle_index = int(len(_evaluated_interval) / 2)
         reg_1 = linregress(
-            x=t[:middle_index * 3],
-            y=_evaluated_interval[:middle_index * 3]
+            x=t[:-4],
+            y=_evaluated_interval[:-4]
         )
         reg_2 = linregress(
-            x=t[middle_index * 3:],
-            y=_evaluated_interval[middle_index * 3:]
+            x=t[-4:],
+            y=_evaluated_interval[-4:]
         )
         return reg_1[0], reg_2[0]
+        
 
     def __normalize_evaluated(self, e):
         return e / self.max_function_val
@@ -631,6 +644,18 @@ class GeneticAlgorithm:
     def __buy_condition(self, _value):
         # print("VALOR: " , _value, _value[0] > 0.1 and _value[1] < 0.1 and _value[1] < 0)
         return  _value[0] < 0 and _value[1] >= 0 
+    
+    def __sell_condition(self, _value):
+        # print("VALOR: " , _value, _value[0] > 0.1 and _value[1] < 0.1 and _value[1] < 0)
+        return  _value[0] >= 0 and _value[1] < 0 
+
+    def __simplified_function(self, to_eval):
+        eval = []
+        for v in to_eval:
+            eval.append(
+                v[0] * v[1]
+            )
+        return sum(eval)
 
     def __function(self, to_eval):
         lambdas = []
@@ -638,7 +663,7 @@ class GeneticAlgorithm:
             lambdas.append(
                 {
 
-                    'func': lambda x: x[0] * x[1],
+                    'func': lambda x: x[0] ** x[1],
                     'eval': v  # (variable_data, valor ag)
                 }
             )

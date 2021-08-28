@@ -35,7 +35,7 @@ class Graphic:
         self.indicators = []
         self.maxs_columns = []
         self.mins_columns = []
-        self.exclude_to_ag = ["open", "high", "low", "close", "volume"]
+        self.exclude_to_ag = ["open", "low", "high", "close", "volume"]
         self.graph_ag = []
         self.not_to_graph_indicators = []
         self.fibos = [0, 0.236, 0.382, 0.500, 0.618, 0.786, 1, 1.618]
@@ -96,6 +96,7 @@ class Graphic:
             self.processed_data['fr_{}'.format(count)] = [min + fb * (max - min) for _ in self.raw_data]
             self.indicators.append('fr_{}'.format(count))
             self.graph_ag.append('fr_{}'.format(count))
+            self.exclude_to_ag.append('fr_{}'.format(count))
             count += 1
             
     def calculate_bollinger_bands(self):
@@ -166,13 +167,11 @@ class Graphic:
     def get_normalized_processed_data(self):
         df = self.processed_data.copy()
         result = self.processed_data.copy()
-        df.drop(columns=self.exclude_to_ag)
-        print("EXCLUDE")
-        print(self.exclude_to_ag)
         for feature_name in df.columns:
             max_value = df[feature_name].max()
             min_value = df[feature_name].min()
             result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
+        # result = result.drop(columns=self.exclude_to_ag, axis=1)
         result = result.replace(np.nan, 0)
         return result
     
@@ -316,7 +315,7 @@ class Graphic:
                             self.processed_data[i],
                             type='scatter',
                             markersize=0.1,
-                            marker='.'
+                            marker='o'
                         )
                     )
                 elif "fr" in i:
@@ -351,7 +350,7 @@ class Graphic:
         ).mkdir(parents=True, exist_ok=True)
         save= dict(
             fname=ubication_file,
-            dpi=300,
+            dpi=600,
         )
 
         lo = ""
@@ -363,6 +362,9 @@ class Graphic:
         lo += f"initial: {_initial}, score: {_score} "
         
         s = fplt.make_mpf_style(base_mpf_style='charles', rc={'font.size':2})
+        
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+            print(self.processed_data)
 
         fplt.plot(
             self.processed_data,
@@ -409,14 +411,23 @@ class Graphic:
                     count_sl += 1
                 elif 'coin_1_buy_quantity' in d:
                     sells[d['position_time']] = d['coin_2_sell_price']
-                
-        self.processed_data['buys'] = buys
-        self.processed_data['sells'] = sells
+        
+        if not self.all_nan(buys):        
+            self.processed_data['buys'] = buys
+            self.graph_ag.extend(["buys"])
+        if not self.all_nan(sells):     
+            self.processed_data['sells'] = sells
+            self.graph_ag.extend(["sells"])
         self.processed_data['evaluated_function'] = evaluated_function
-        self.graph_ag.extend(["sells", "buys", "evaluated_function"])
+        self.graph_ag.extend(["evaluated_function"])
+        # self.graph_ag.extend(["sells", "buys"]) #, "evaluated_function"])
         
         # operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
-        return data[-1] 
+        return data[-1]
+    
+    def all_nan(self, arr):
+        arr = pd.DataFrame(arr)
+        return arr.isnull().values.all(axis=0)
     
     def get_last_ma_period(self, _period):
         return self.processed_data['ma_{}'.format(_period)][-1]
