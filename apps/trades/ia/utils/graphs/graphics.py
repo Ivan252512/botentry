@@ -208,16 +208,16 @@ class Graphic:
                     )
                     count_min += 1
                 else:
-                    if "d2" in i:
-                        subplots.append(
-                            fplt.make_addplot(
-                                self.processed_data[i],
-                                type='scatter',
-                                markersize=0.1,
-                                marker='+'
-                            )
-                        )
-                    elif "ma" in i:
+                    # if "d2" in i:
+                    #     subplots.append(
+                    #         fplt.make_addplot(
+                    #             self.processed_data[i],
+                    #             type='scatter',
+                    #             markersize=0.1,
+                    #             marker='+'
+                    #         )
+                    #     )
+                    if "ma" in i:
                         subplots.append(
                             fplt.make_addplot(
                                 self.processed_data[i],
@@ -390,6 +390,115 @@ class Graphic:
         # )
 
         # client.upload_file(ubication_file, settings.AWS_BUCKET, ubication_file)
+        
+    def graph_for_evaluated_not_ai(self, _initial, _score, _last_operation):
+        subplots = []
+        print(self.graph_ag)
+        for i in self.graph_ag:
+            if "sells" in i:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='scatter',
+                        markersize=10,
+                        marker='v',
+                        color="green"
+                        
+                    )
+                )
+            elif "buys" in i:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='scatter',
+                        markersize=10,
+                        marker='^',
+                        color="red"
+                    )
+                )
+            elif "stop_loss" in i:
+                subplots.append(
+                    fplt.make_addplot(
+                        self.processed_data[i],
+                        type='scatter',
+                        markersize=2,
+                        marker='*',
+                        color="blue"
+                    )
+                )
+            else:
+                if "d2" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=0.1,
+                            marker='+'
+                        )
+                    )
+                elif "ma" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=0.1,
+                            marker='o'
+                        )
+                    )
+                elif "fr" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='scatter',
+                            markersize=0.1,
+                            marker='*'
+                        )
+                    )
+
+
+        current_date = datetime.datetime.now()
+        name_file = current_date.strftime("%m_%d_%Y_%H_%M_%S") + ".png"
+        ubication_file = "graphics/{}/{}/not_ai/{}".format(
+                self.pair,
+                self.trading_interval,
+                name_file
+            )
+        Path(
+            "graphics/{}/{}/not_ai/".format(
+                self.pair,
+                self.trading_interval
+            )
+        ).mkdir(parents=True, exist_ok=True)
+        save= dict(
+            fname=ubication_file,
+            dpi=600,
+        )
+
+        lo = ""
+        for k in _last_operation.keys():
+            if not "balance" in k:
+                if not "stop_loss" in k:
+                    lo += f"{k}: {_last_operation[k]} "
+                    
+        lo += f"initial: {_initial}, score: {_score} "
+        
+        s = fplt.make_mpf_style(base_mpf_style='charles', rc={'font.size':2})
+        
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+            print(self.processed_data)
+
+        fplt.plot(
+            self.processed_data,
+            type='candle',
+            style=s,
+            title=lo,
+            ylabel='Price ($)',
+            volume=True,
+            ylabel_lower='Shares\nTraded',
+            addplot=subplots,
+            savefig=save
+        ) 
+        
 
                 
     def process_data_received_ag(self, data, evaluated_function):
@@ -424,6 +533,36 @@ class Graphic:
         
         # operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
         return data[-1]
+    
+    def process_data_received_not_ai(self, data):
+        buys = [np.nan for _ in range(self.length)]
+        sells = [np.nan for _ in range(self.length)]
+        count_sl = 0
+        for d in data:
+            if d['position_time'] < self.length:
+                if 'coin_1_sell_quantity' in d:
+                    buys[d['position_time']] = d['coin_2_buy_price']
+                    stop_loss = [None for _ in range(self.length)]
+                    count = 0
+                    for sl in d['stop_loss']:
+                        if d['position_time'] + count < self.length:
+                            stop_loss[d['position_time'] + count] = sl
+                        count += 1
+                    self.processed_data['stop_loss_{}'.format(count_sl)] = stop_loss
+                    self.graph_ag.append('stop_loss_{}'.format(count_sl))
+                    count_sl += 1
+                elif 'coin_1_buy_quantity' in d:
+                    sells[d['position_time']] = d['coin_2_sell_price']
+        
+        if not self.all_nan(buys):        
+            self.processed_data['buys'] = buys
+            self.graph_ag.extend(["buys"])
+        if not self.all_nan(sells):     
+            self.processed_data['sells'] = sells
+            self.graph_ag.extend(["sells"])
+            
+        return data[-1] if data else {}
+    
     
     def all_nan(self, arr):
         arr = pd.DataFrame(arr)

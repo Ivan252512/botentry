@@ -26,7 +26,12 @@ urlpatterns = [
     path('exchange/get_account', views.get_account, name='exchange-get-account-info'),
     
     # Bot
+    # With AG
     path('bot/train', views.async_train, name='train'),
     path('bot/evaluate', views.evaluate, name='evaluate'),
+    
+    # Without AG
+    path('bot/evaluate_no_ai', views.evaluate_no_ai, name='evaluate_no_ai'),
+    
     
 ]

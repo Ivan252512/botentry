@@ -32,6 +32,8 @@ from apps.trades.ia.basic_trading.trader import (
     TraderSHIBBUSD
 )
 
+from apps.trades.ia.utils.strategies.strategies import Strategy
+
 # Exchange endpoints
 
 PAIR_INFO = {
@@ -338,3 +340,39 @@ def async_train(request):
             return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
     else:
         return JsonResponse({'message': 'Método no permitido'}, status=405)
+    
+@csrf_exempt
+def evaluate_no_ai(request):
+    print("++++++++++++++++++++++++++++++++++++++++++++")
+    print(datetime.datetime.now())
+    fields = [
+        "principal_trade_period",
+        "money",
+        "sl_percent",
+        "sl_period",
+        "pair",
+        "periods_environment"
+    ]
+    fields_to_func = {}
+    body = json.loads(request.body.decode('utf-8'))
+    for f in fields:
+        if f not in body:
+            return JsonResponse({'message': f'Falta campo {f}'},
+                                status=400)
+        fields_to_func[f"_{f}"] = body[f]
+        
+    PIC = PAIR_INFO[fields_to_func["_pair"]]
+    fields_to_func["_trader_class"] = PIC["trader_class"]
+    fields_to_func["_coin1"] = PIC["coin1"]
+    fields_to_func["_coin2"] = PIC["coin2"]
+
+    try:
+        btb = Strategy(
+            **fields_to_func
+        )
+        btb.eval_function_wit_last_individual()
+        btb.graph_data()
+        return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
+    except Exception:
+        traceback.print_exc()
+        return JsonResponse({'message': "Entrenamiento fallido"}, status=500)
