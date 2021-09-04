@@ -85,8 +85,30 @@ class Graphic:
         # self.exclude_to_ag.append('ma_{}'.format(_periods))
         self.graph_ag.append('ma_{}'.format(_periods))
         
+        
     def calculate_exponential_moving_average(self, _periods):
-        pass
+        self.processed_data['ema_{}'.format(_periods)] = self.processed_data.iloc[:,0].ewm(span=_periods,adjust=False).mean()
+        self.indicators.append('ema_{}'.format(_periods))
+        # self.exclude_to_ag.append('ma_{}'.format(_periods))
+        self.graph_ag.append('ema_{}'.format(_periods))
+            
+    def calculate_macd(self):
+        self.processed_data['macd'] = self.processed_data['ema_12'] - self.processed_data['ema_26']
+        self.indicators.append('macd')
+        # self.exclude_to_ag.append('ma_{}'.format(_periods))
+        self.graph_ag.append('macd')
+        
+    def calculate_signal(self):
+        self.processed_data['signal'] = self.processed_data['ema_9']
+        self.indicators.append('signal')
+        # self.exclude_to_ag.append('ma_{}'.format(_periods))
+        self.graph_ag.append('signal')
+        
+    def calculate_histogram(self):
+        self.processed_data['histogram'] = self.processed_data['macd'] - self.processed_data['signal']
+        self.indicators.append('histogram')
+        # self.exclude_to_ag.append('ma_{}'.format(_periods))
+        self.graph_ag.append('histogram')
         
     def calculate_fibonacci_retracement(self):
         count = 1

@@ -55,9 +55,13 @@ class Trader:
             _trading_interval=self.trading_interval
         )
         self.graphic.process_data()
-        self.graphic.calculate_moving_average(_periods=5)
-        self.graphic.calculate_moving_average(_periods=10)
-        self.graphic.calculate_moving_average(_periods=20)
+        self.graphic.calculate_exponential_moving_average(_periods=5)
+        self.graphic.calculate_exponential_moving_average(_periods=10)
+        self.graphic.calculate_exponential_moving_average(_periods=20)
+        self.graphic.calculate_exponential_moving_average(_periods=9)
+        self.graphic.calculate_exponential_moving_average(_periods=12)
+        self.graphic.calculate_exponential_moving_average(_periods=26)
+        self.graphic.calculate_macd()
         self.graphic.calculate_fibonacci_retracement()
         for i in range(3, 9, 3):
             self.graphic.get_second_derivative(_sigma_gaussian_filter=i)
