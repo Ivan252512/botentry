@@ -80,17 +80,17 @@ class Graphic:
         self.processed_data = df2
         
     def calculate_moving_average(self, _periods):
-        self.processed_data['ma_{}'.format(_periods)] = self.processed_data.rolling(window=_periods)['low'].mean()
+        self.processed_data['ma_{}'.format(_periods)] = self.processed_data.ewm(span=_periods, adjust=False).mean()
         self.indicators.append('ma_{}'.format(_periods))
         # self.exclude_to_ag.append('ma_{}'.format(_periods))
         self.graph_ag.append('ma_{}'.format(_periods))
         
         
-    def calculate_exponential_moving_average(self, _periods):
+    def calculate_exponential_moving_average(self, _periods, _graphic=True):
         self.processed_data['ema_{}'.format(_periods)] = self.processed_data.iloc[:,0].ewm(span=_periods,adjust=False).mean()
-        self.indicators.append('ema_{}'.format(_periods))
-        # self.exclude_to_ag.append('ma_{}'.format(_periods))
-        self.graph_ag.append('ema_{}'.format(_periods))
+        if _graphic:
+            self.indicators.append('ema_{}'.format(_periods))
+            self.graph_ag.append('ema_{}'.format(_periods))
             
     def calculate_macd(self):
         self.processed_data['macd'] = self.processed_data['ema_12'] - self.processed_data['ema_26']
@@ -99,7 +99,7 @@ class Graphic:
         self.graph_ag.append('macd')
         
     def calculate_signal(self):
-        self.processed_data['signal'] = self.processed_data['ema_9']
+        self.processed_data['signal'] = self.processed_data['macd'].ewm(span=9, adjust=False).mean()
         self.indicators.append('signal')
         # self.exclude_to_ag.append('ma_{}'.format(_periods))
         self.graph_ag.append('signal')
@@ -458,13 +458,38 @@ class Graphic:
                             marker='+'
                         )
                     )
-                elif "ma" in i:
+                elif "ema" in i:
                     subplots.append(
                         fplt.make_addplot(
                             self.processed_data[i],
-                            type='scatter',
-                            markersize=0.1,
-                            marker='o'
+                            type='line',
+                        )
+                    )
+                elif "macd" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='line',
+                            color='green',
+                            panel='lower'
+                        )
+                    )
+                elif "signal" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='line',
+                            color='red',
+                            panel='lower'
+                        )
+                    )
+                elif "histogram" in i:
+                    subplots.append(
+                        fplt.make_addplot(
+                            self.processed_data[i],
+                            type='line',
+                            color='black',
+                            panel='lower'
                         )
                     )
                 elif "fr" in i:
@@ -493,7 +518,7 @@ class Graphic:
         ).mkdir(parents=True, exist_ok=True)
         save= dict(
             fname=ubication_file,
-            dpi=600,
+            dpi=1400,
         )
 
         lo = ""
@@ -515,7 +540,6 @@ class Graphic:
             style=s,
             title=lo,
             ylabel='Price ($)',
-            volume=True,
             ylabel_lower='Shares\nTraded',
             addplot=subplots,
             savefig=save
