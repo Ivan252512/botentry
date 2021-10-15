@@ -438,16 +438,16 @@ class Graphic:
                         color="red"
                     )
                 )
-            elif "stop_loss" in i:
-                subplots.append(
-                    fplt.make_addplot(
-                        self.processed_data[i],
-                        type='scatter',
-                        markersize=2,
-                        marker='*',
-                        color="blue"
-                    )
-                )
+            #elif "stop_loss" in i:
+            #    subplots.append(
+            #        fplt.make_addplot(
+            #            self.processed_data[i],
+            #            type='scatter',
+            #            markersize=2,
+            #            marker='*',
+            #            color="blue"
+            #        )
+            #    )
             else:
                 if "d2" in i:
                     subplots.append(
@@ -492,15 +492,15 @@ class Graphic:
                             panel='lower'
                         )
                     )
-                elif "fr" in i:
-                    subplots.append(
-                        fplt.make_addplot(
-                            self.processed_data[i],
-                            type='scatter',
-                            markersize=0.1,
-                            marker='*'
-                        )
-                    )
+                # elif "fr" in i:
+                #    subplots.append(
+                #        fplt.make_addplot(
+                #            self.processed_data[i],
+                #            type='scatter',
+                #            markersize=0.1,
+                #            marker='*'
+                #        )
+                #    )
 
 
         current_date = datetime.datetime.now()

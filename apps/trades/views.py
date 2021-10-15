@@ -351,7 +351,8 @@ def evaluate_no_ai(request):
         "sl_percent",
         "sl_period",
         "pair",
-        "periods_environment"
+        "periods_environment",
+        "interval"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
@@ -372,6 +373,7 @@ def evaluate_no_ai(request):
         )
         btb.eval_function_wit_last_individual()
         btb.graph_data()
+        btb.invest()
         return JsonResponse({'message': "Entrenamiento exitoso"}, status=200)
     except Exception:
         traceback.print_exc()

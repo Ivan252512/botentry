@@ -6,6 +6,9 @@ from apps.trades.ia.utils.utils import (
 
 from apps.trades.binance.client import Client
 
+from scipy.stats import linregress
+
+from apps.trades.binance.exceptions import BinanceAPIException
 
 
 class Individual:
@@ -22,11 +25,15 @@ class BackTesting:
                  _environment,
                  _stop_loss_percent,
                  _stop_loss_divisor_plus, 
+                 _keys,
+                 _interval
                 ):
         self.environment = _environment
         self.periods_environment = len(_environment)
         self.stop_loss_percent = _stop_loss_percent
         self.stop_loss_divisor_plus = _stop_loss_divisor_plus
+        self.keys = _keys
+        self.interval = _interval
         
     def test(self, _data):
           
@@ -107,12 +114,18 @@ class BackTesting:
     def __evaluate(self):
         to_test_2 = []
         position = 0
-        for temp in self.environment: 
+        interval = self.interval
+        while position + interval  <= len(self.environment) - 1:
+            var = {}
+            for k in range(len(self.keys)):
+                var[self.keys[k]] = []
+                for se in self.environment[position:position+interval]:
+                    var[self.keys[k]] += [se[k]]
             to_test_2.append(
                 {
-                    'position_time': position,
-                    'buy': self.buy_condition(temp),
-                    'sell': self.sell_condition(temp),
+                    'position_time': position + interval,
+                    'buy': self.MACD_strategy(var)[0],
+                    'sell': self.MACD_strategy(var)[1],
                 }
             )
             position += 1
@@ -120,11 +133,61 @@ class BackTesting:
         return to_test_2
     
     def buy_condition(self, value):
+        self.MACD_strategy(value)
         return True
     
     def sell_condition(self, value):
         return False
     
+    def MACD_strategy(self, value):
+        macd = value.get('macd', None)
+        signal = value.get('signal', None)
+        histogram = value.get('histogram', None)
+        ema_5 = value.get('ema_5', None)
+        ema_10 = value.get('ema_10', None)
+        ema_20 = value.get('ema_20', None)
+        
+        cross_macd = self.cross_variable(signal, macd)
+        slope_histogram = self.positive_slope(histogram)
+        slope_ema_5 = self.positive_slope(ema_5)
+        slope_ema_10 = self.positive_slope(ema_10)
+        slope_ema_20 = self.positive_slope(ema_20)
+        
+        buy_macd = False
+        sell_macd = False
+        if cross_macd == 1: #and \
+            #not (slope_histogram and 
+            #     slope_ema_5 and 
+            #     slope_ema_10 and 
+            #     slope_ema_20):
+            buy_macd = True
+
+        if cross_macd == -1: # and \
+            #(slope_histogram and
+            # slope_ema_5 and 
+            # slope_ema_10 and 
+            # slope_ema_20):
+            sell_macd = True
+            
+        return buy_macd, sell_macd            
+
+    def cross_variable(self, variable_1, variable_2):
+        for i in range(len(variable_1)):       
+            if variable_1[0] < variable_2[0]:
+                if variable_1[i] >= variable_2[i]:
+                    return 1
+            else:
+                if variable_1[i] <= variable_2[i]:
+                    return -1
+        return 0
+    
+    def positive_slope(self, variable):
+        t = [i for i in range(len(variable))]
+        reg = linregress(
+            x=t,
+            y=variable
+        )
+        return reg[0] >= 0
 class Strategy:
     
     def __init__(self, 
@@ -136,7 +199,8 @@ class Strategy:
                  _pair,
                  _coin1,
                  _coin2,
-                 _periods_environment
+                 _periods_environment,
+                 _interval
         ):
         self.money = _money
         self.stop_loss_percent = _sl_percent
@@ -152,6 +216,7 @@ class Strategy:
         self.coin1 = _coin1
         self.coin2 = _coin2       
         self.periods_environment = _periods_environment 
+        self.interval = _interval
 
 
     def eval_function_wit_last_individual(self):
@@ -164,8 +229,8 @@ class Strategy:
             data = trader.graphic.get_processed_data()
             info = {}
             if p == self.principal_trade_period:
-                data_normalized = trader.graphic.get_normalized_processed_data()
-                environment = data_normalized.values.tolist()
+                environment = data.values.tolist()
+                keys = data.keys()
 
                 # Market info
                 self.market = SimulateMarket(
@@ -175,7 +240,9 @@ class Strategy:
                 bt = BackTesting(
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
-                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus
+                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus,
+                    _keys=keys,
+                    _interval=self.interval
                 )
 
 
@@ -191,7 +258,7 @@ class Strategy:
                     best.relevant_info,
                 )
 
-                info = {
+                self.info_to_invest = {
                     'score': best.score,
                     'operations': best.relevant_info,
                     'last_operation': last_operation
@@ -201,7 +268,7 @@ class Strategy:
                 {
                     'period': p,
                     'trader': trader,
-                    'info': info
+                    'info': self.info_to_invest
                 }
             )
             
@@ -211,3 +278,239 @@ class Strategy:
                 t['trader'].graphic.graph_for_evaluated_not_ai(
                     self.money, t['info']['score'], t['info']['last_operation'])
             t['trader'].graphic.graph()
+
+    def invest(self):
+        order = self.info_to_invest['last_operation']
+        profit = self.info_to_invest['score']
+        print("-------------------------------------------")
+        print(order)
+        print(profit)
+        print("-------------------------------------------")
+        if not "position_time" in order:
+            return
+        position_time = order['position_time']
+        print("Position time: ", position_time)
+
+        if 'coin_1_sell_quantity' in order:
+            increase_sl = False
+            buyed_price = 0
+            try:
+                if int(position_time) >= self.periods_environment - 2:
+                    buy = self.buy_market(float(order["coin_2_buy_price"]))
+                    if buy:
+                        if buy["fills"]:
+                            buyed_price = float(buy["fills"][-1]["price"])
+            except BinanceAPIException as e:
+                if e.code == -2010 and e.message == "Account has insufficient balance for requested action.":
+                    self.increase_sl()
+                    increase_sl = True
+            finally:
+                if int(position_time) >= self.periods_environment - 2:
+                    if not increase_sl and buyed_price >= 0:
+                        self.stop_loss_limit_sell(
+                            float(buyed_price) * ( 1 - self.stop_loss_percent ),
+                            float(buyed_price) * ( 1 - self.stop_loss_percent - 0.005 )
+                        )
+                else:
+                    if not increase_sl:
+                        self.increase_sl()    
+        elif 'coin_2_sell_price' in order:
+            # if int(position_time) == 498:
+            #     self.stop_loss_limit_sell(
+            #         float(ag_order["coin_2_sell_price"]),
+            #         float(ag_order["coin_2_sell_price"]) * (1 - 0.005) 
+            #     )
+            # else:
+            #     self.increase_sl()
+            self.increase_sl()  
+            
+    def increase_sl(self):
+        orders = self.get_open_orders()
+        if orders:
+            last_order = orders[-1]
+            stop_price = float(last_order["stopPrice"]) * (1 + float(self.stop_loss_divisor_plus))
+            price = stop_price * (1 - 0.005)
+            self.stop_loss_limit_sell(
+                float(stop_price),
+                float(price)
+            )
+
+    def cancel_all_open_orders(self):
+        for oo in self.get_open_orders():
+            if oo["symbol"] == self.pair:
+                self.cancel_order(oo["orderId"])
+
+    def cancel_order(self, order_id):
+        self.client.cancel_order(
+            symbol=self.pair,
+            orderId=order_id
+        )
+
+    def set_money(self, _money):
+        if float(self.get_coin1_balance()['free']) >= _money:
+            self.money = _money
+            return True
+        return False
+
+    def buy_market(self, price):
+        print("BUY MARKET PRICE: ", price)
+        buy = None
+        if price > 0:
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("BUY MARKET: ", self.pair, round(quantity, 4), quantity)
+                buy = self.client.order_market_buy(
+                    symbol=self.pair,
+                    quantity=round(quantity, 4),
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="BUY MARKET",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
+        return buy
+
+    def sell_market(self, price):
+        print("SELL MARKET PRICE: ", price)
+        sell = None
+        if price > 0:
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("SELL MARKET: ", self.pair, round(quantity, 4), quantity)
+                sell = self.client.order_market_sell(
+                    symbol=self.pair,
+                    quantity=round(quantity, 4),
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="SELL MARKET",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
+        return sell
+
+    def buy_limit(self, price):
+        print("BUY LIMIT PRICE: ", price)
+        buy = None
+        if price > 0:
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("BUY LIMIT: ", self.pair, round(quantity, 4), quantity, round(price, 2), price)
+                buy = self.client.order_limit_buy(
+                    symbol=self.pair,
+                    quantity=round(quantity, 4),
+                    price=round(price, 2)
+                )
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="BUY LIMIT",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
+        return buy
+
+    def stop_loss_limit_sell(self, stop, price):
+        self.cancel_all_open_orders()
+        print("SL LIMIT PRICE: ", price)
+        buy = None
+        if price > 0 and stop > 0:
+            exception = ""
+            quantity = 0
+            traceback_str = ""
+            try:
+                quantity = self.money / price
+                print("SL LIMIT: ", self.pair, round(quantity, 4), quantity, round(price, 2), price, round(stop, 2), stop)
+                buy = self.client.order_limit_sell_stop_loss(
+                    symbol=self.pair,
+                    quantity=round(quantity, 4),
+                    price=round(price, 2),
+                    stopPrice=round(stop, 2)
+                )
+            except BinanceAPIException as e:
+                if e.code == -2010 and e.message == "Stop price would trigger immediately.":
+                        self.sell_market(
+                            float(round(stop, 2))
+                        )
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            except Exception as e:
+                exception = str(e)
+                traceback_str = traceback.format_exc()
+                raise e
+            finally:
+                TradeModel.objects.create(
+                    pair=self.pair,
+                    operation="SL LIMIT",
+                    money=self.money,
+                    price=price,
+                    quantity=quantity,
+                    error=exception,
+                    traceback=traceback_str
+                )
+        return buy
+
+    def get_last_average_price(self):
+        return self.client.get_avg_price(
+            symbol=self.pair
+        )
+
+    def get_all_orders(self):
+        return self.client.get_all_orders(
+            symbol=self.pair
+        )
+
+    def get_open_orders(self):
+        return self.client.get_open_orders(
+            symbol=self.pair
+        )
+
+    def get_coin1_balance(self):
+        return self.client.get_asset_balance(
+            asset=self.coin1
+        )
+
+    def get_coin2_balance(self):
+        return self.client.get_asset_balance(
+            asset=self.coin2
+        )
+
+    def get_order(self, _order_id):
+        return self.client.get_order(
+            symbol=self.pair,
+            orderId=_order_id
+        )
