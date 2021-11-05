@@ -615,13 +615,13 @@ class Graphic:
         return arr.isnull().values.all(axis=0)
     
     def get_last_ma_period(self, _period):
-        return self.processed_data['ma_{}'.format(_period)][-1]
+        return self.processed_data.get(['ma_{}'.format(_period)][-1], None)
     
     def get_fibos(self):
         fibos = []
         count = 1
         for _ in self.fibos:
-            fibos.append(self.processed_data['fr_{}'.format(count)][-1])
+            fibos.append(self.processed_data.get(['fr_{}'.format(count)][-1], None))
             count += 1
         return fibos
     
