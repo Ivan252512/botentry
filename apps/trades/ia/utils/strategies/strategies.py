@@ -147,26 +147,19 @@ class BackTesting:
         ema_10 = value.get('ema_10', None)
         ema_20 = value.get('ema_20', None)
         
-        cross_macd = self.cross_variable(signal, macd)
-        slope_histogram = self.positive_slope(histogram)
-        slope_ema_5 = self.positive_slope(ema_5)
-        slope_ema_10 = self.positive_slope(ema_10)
-        slope_ema_20 = self.positive_slope(ema_20)
+        cross_macd = self.cross_variable(macd, signal)
+        cross_ema_5_10 = self.cross_variable(ema_5, ema_20)
+        cross_ema_10_20 = self.cross_variable(ema_10, ema_20)
+        slope_histogram = self.slope(histogram)
+        slope_ema_5 = self.slope(ema_5)
+        slope_ema_10 = self.slope(ema_10)
+        slope_ema_20 = self.slope(ema_20)
         
         buy_macd = False
         sell_macd = False
-        if cross_macd == 1: #and \
-            #not (slope_histogram and 
-            #     slope_ema_5 and 
-            #     slope_ema_10 and 
-            #     slope_ema_20):
+        if cross_ema_5_10 == 1:
             buy_macd = True
-
-        if cross_macd == -1: # and \
-            #(slope_histogram and
-            # slope_ema_5 and 
-            # slope_ema_10 and 
-            # slope_ema_20):
+        elif cross_ema_5_10 == -1:
             sell_macd = True
             
         return buy_macd, sell_macd            
@@ -181,7 +174,7 @@ class BackTesting:
                     return -1
         return 0
     
-    def positive_slope(self, variable):
+    def slope(self, variable):
         t = [i for i in range(len(variable))]
         reg = linregress(
             x=t,

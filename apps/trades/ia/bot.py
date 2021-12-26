@@ -42,7 +42,9 @@ class TraderBot(object):
                  _pair,
                  _coin1,
                  _coin2,
-                 _periods_environment
+                 _periods_environment,
+                _interval,
+                _variables
         ):
         self.money = _money
         self.stop_loss_percent = _sl_percent
@@ -65,6 +67,8 @@ class TraderBot(object):
         self.max_cod_ind_value = _max_cod_ind_value
         self.generations_ind = _generations_ind
         self.periods_environment = _periods_environment
+        self.interval = _interval
+        self.variables = _variables
         
 
     def eval_function_with_genetic_algorithm(self):
@@ -77,8 +81,10 @@ class TraderBot(object):
             data = trader.graphic.get_processed_data()
             ag = {}
             if p == self.principal_trade_period:
-                data_normalized = trader.graphic.get_normalized_processed_data()
-                environment = data_normalized.values.tolist()
+                # data_normalized = trader.graphic.get_normalized_processed_data()
+                # environment = data_normalized.values.tolist()
+                environment = data.values.tolist()
+                keys = data.keys()
 
                 # Market info
                 self.market = SimulateMarket(
@@ -91,18 +97,22 @@ class TraderBot(object):
                     _population_min=self.population_min,
                     _population_max=self.population_max,
                     _individual_dna_length=self.individual_dna_length,
-                    _individual_encoded_variables_quantity=len(environment[0]),
+                    _individual_encoded_variables_quantity=(
+                        len(environment[0]) if  
+                        not self.variables else self.variables), 
                     _individual_muatition_intensity=self.individual_muatition_intensity,
                     _min_cod_ind_value=self.min_cod_ind_value,
                     _max_cod_ind_value=self.max_cod_ind_value,
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
-                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus
+                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus,
+                    _keys=keys,
+                    _variables=self.variables
                 )
                 score, constants, operations, best, evaluated_function = self.ag.evolution_individual_optimized(
                     _market=self.market,
                     _initial_amount=self.money,
-                    _evaluation_intervals=12,
+                    _evaluation_intervals=self.interval,
                     _generations_pob=1,
                     _generations_ind=self.generations_ind
                 )
@@ -151,8 +161,10 @@ class TraderBot(object):
             data = trader.graphic.get_processed_data()
             ag = {}
             if p == self.principal_trade_period:
-                data_normalized = trader.graphic.get_normalized_processed_data()
-                environment = data_normalized.values.tolist()
+                # data_normalized = trader.graphic.get_normalized_processed_data()
+                # environment = data_normalized.values.tolist()
+                environment = data.values.tolist()
+                keys = data.keys()
 
                 # Market info
                 self.market = SimulateMarket(
@@ -165,13 +177,17 @@ class TraderBot(object):
                     _population_min=self.population_min,
                     _population_max=self.population_max,
                     _individual_dna_length=self.individual_dna_length,
-                    _individual_encoded_variables_quantity=len(environment[0]),
+                    _individual_encoded_variables_quantity=(
+                        len(environment[0]) if  
+                        not self.variables else self.variables), 
                     _individual_muatition_intensity=self.individual_muatition_intensity,
                     _min_cod_ind_value=self.min_cod_ind_value,
                     _max_cod_ind_value=self.max_cod_ind_value,
                     _environment=environment,
                     _stop_loss_percent=self.stop_loss_percent,
-                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus
+                    _stop_loss_divisor_plus=self.stop_loss_divisor_plus,
+                    _keys=keys,
+                    _variables=self.variables
                 )
 
                 ind_model_object = IndividualModel.objects.filter(
@@ -197,7 +213,7 @@ class TraderBot(object):
                 data = {
                     "market": self.market,
                     "initial_amount": self.money,
-                    "evaluation_intervals": 12,
+                    "evaluation_intervals": 4,
                     "individual": individual
                 }
 
@@ -634,7 +650,7 @@ class TraderBot(object):
     def graph_data(self):
         for t in self.traders_per_period:
             if t['ag']:
-                t['trader'].graphic.graph_for_ag(
+                t['trader'].graphic.graph_for_evaluated_not_ai(
                     self.money, t['ag']['score'], t['ag']['last_operation'])
             t['trader'].graphic.graph()
 

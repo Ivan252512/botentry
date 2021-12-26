@@ -422,7 +422,7 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=10,
+                        markersize=50,
                         marker='v',
                         color="green"
                         
@@ -433,7 +433,7 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=10,
+                        markersize=50,
                         marker='^',
                         color="red"
                     )
@@ -573,8 +573,9 @@ class Graphic:
         if not self.all_nan(sells):     
             self.processed_data['sells'] = sells
             self.graph_ag.extend(["sells"])
-        self.processed_data['evaluated_function'] = evaluated_function
-        self.graph_ag.extend(["evaluated_function"])
+        if evaluated_function:
+            self.processed_data['evaluated_function'] = evaluated_function
+            self.graph_ag.extend(["evaluated_function"])
         # self.graph_ag.extend(["sells", "buys"]) #, "evaluated_function"])
         
         # operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"

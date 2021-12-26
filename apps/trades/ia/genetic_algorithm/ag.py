@@ -278,6 +278,8 @@ class GeneticAlgorithm:
                  _environment,
                  _stop_loss_percent,
                  _stop_loss_divisor_plus,
+                 _keys,
+                 _variables,
                  _individual_relevant_info=False,
                  ):
         self.populations = []
@@ -291,13 +293,14 @@ class GeneticAlgorithm:
         self.periods_environment = len(_environment)
         self.min_ag_dna_val = _min_cod_ind_value
         self.max_ag_dna_val = _max_cod_ind_value
-        self.individual_encoded_variables_quantity = _individual_encoded_variables_quantity
         self.max_function_val = self.max_ag_dna_val * \
             self.individual_encoded_variables_quantity
         self.individual_relevant_info = _individual_relevant_info
         self.evaluated = BinaryTree(0, 0)
         self.stop_loss_percent = _stop_loss_percent
         self.stop_loss_divisor_plus = _stop_loss_divisor_plus
+        self.keys = _keys
+        self.variables = _variables
         for _ in range(self.populations_quantity):
             self.populations.append(
                 Population(
@@ -505,6 +508,7 @@ class GeneticAlgorithm:
         return population
 
     def optimized_individual_function(self, _data):
+        
         individual = _data['individual']     
         
         if individual.score != 0 and individual.relevant_info:
@@ -586,7 +590,7 @@ class GeneticAlgorithm:
             individual.set_score(score)
         return individual
 
-    def __evaluate(self, individual, _evaluation_intervals):
+    def __evaluate_last(self, individual, _evaluation_intervals):
         ag_variables = individual.decode_dna_variables_to_decimal()
         evaluated = []
         to_test_2 = []
@@ -614,6 +618,83 @@ class GeneticAlgorithm:
                 )
             
         return to_test_2, evaluated
+    
+    
+    def __evaluate(self, individual, _evaluation_intervals):
+        ag_variables = individual.decode_dna_variables_to_decimal()
+        to_test_2 = []
+        position = 0 
+        interval = _evaluation_intervals
+        while position + interval  <= len(self.environment):
+            var = {}
+            for k in range(len(self.keys)):
+                var[self.keys[k]] = []
+                for se in self.environment[position:position+interval]:
+                    var[self.keys[k]] += [se[k]]
+            macd_strategy = self.MACD_strategy(var, ag_variables)
+            to_test_2.append(
+                {
+                    'position_time': position + interval,
+                    'buy': macd_strategy[0],
+                    'sell': macd_strategy[1],
+                }
+            )
+            position += 1
+                
+        return to_test_2, []
+    
+    def MACD_strategy(self, value, ag_variables):
+        low = np.array(value.get('low')) 
+        
+        # print(value)
+        
+        macd = np.array(value.get('macd', low)) * ag_variables[0] + ag_variables[1] 
+        signal = np.array(value.get('signal', low)) * ag_variables[2] + ag_variables[3] 
+        histogram = np.array(value.get('histogram', low)) * ag_variables[4] + ag_variables[5] 
+        ema_5 = np.array(value.get('ema_5', low)) * ag_variables[6] + ag_variables[7] 
+        ema_10 = np.array(value.get('ema_10', low)) * ag_variables[8] + ag_variables[9] 
+        ema_20 = np.array(value.get('ema_20', low)) * ag_variables[10] + ag_variables[11] 
+        
+        cross_macd = self.cross_variable(macd, signal)
+        cross_ema_5_10 = self.cross_variable(ema_5, ema_20)
+        cross_ema_10_20 = self.cross_variable(ema_10, ema_20)
+        slope_histogram = self.slope(histogram)
+        slope_ema_5 = self.slope(ema_5)
+        slope_ema_10 = self.slope(ema_10)
+        slope_ema_20 = self.slope(ema_20)
+        
+        buy_macd = False
+        sell_macd = False
+        if slope_ema_5[0] and slope_ema_10[0] and slope_ema_20[0]:
+            buy_macd = True
+        if slope_ema_5[1] and slope_ema_10[1] and slope_ema_20[1]:
+            sell_macd = True
+            
+        return buy_macd, sell_macd            
+
+    def cross_variable(self, variable_1, variable_2):
+        for i in range(len(variable_1)):       
+            if variable_1[0] < variable_2[0]:
+                if variable_1[i] >= variable_2[i]:
+                    return 1
+            else:
+                if variable_1[i] <= variable_2[i]:
+                    return -1
+        return 0
+    
+    def slope(self, variable):
+        t = [i for i in range(len(variable))]
+        
+        reg_1 = linregress(
+            x=t[:-2],
+            y=variable[:-2]
+        )
+        reg_2 = linregress(
+            x=t[-2:],
+            y=variable[-2:]
+        )
+        return reg_1[0] <= 0 and reg_2[0] > 0, reg_1[0] >= 0 and reg_2[0] < 0
+    
 
         # Toca comprar cuando evaluated tenga algunos valores
 

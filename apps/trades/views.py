@@ -226,7 +226,9 @@ def train(request):
         "max_cod_ind_value",
         "generations_ind",
         "pair",
-        "periods_environment"
+        "periods_environment",
+        "interval",
+        "variables"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
@@ -287,7 +289,9 @@ def evaluate(request):
         "max_cod_ind_value",
         "generations_ind",
         "pair",
-        "periods_environment"
+        "periods_environment",
+        "interval",
+        "variables"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
