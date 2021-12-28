@@ -61,6 +61,8 @@ class Trader:
         self.graphic.calculate_exponential_moving_average(_periods=9, _graphic=False)
         self.graphic.calculate_exponential_moving_average(_periods=12, _graphic=False)
         self.graphic.calculate_exponential_moving_average(_periods=26, _graphic=False)
+        self.graphic.get_cross_ma()
+        self.graphic.get_cross_ema()
         self.graphic.calculate_macd()
         self.graphic.calculate_signal()
         self.graphic.calculate_histogram()

@@ -138,7 +138,6 @@ def get_orderbook_tickers(request):
 def get_orderbook(request, symbol):
     if request.method == "GET":
         client = Client()
-        print(client.API_KEY, client.API_SECRET)
         orderbook = client.get_order_book(symbol=symbol)
         return JsonResponse({'message': orderbook}, status=200)
     else:

@@ -631,12 +631,12 @@ class GeneticAlgorithm:
                 var[self.keys[k]] = []
                 for se in self.environment[position:position+interval]:
                     var[self.keys[k]] += [se[k]]
-            macd_strategy = self.MACD_strategy(var, ag_variables)
+            polinomial_strategy = self.polinomial_strategy(var, ag_variables)
             to_test_2.append(
                 {
                     'position_time': position + interval,
-                    'buy': macd_strategy[0],
-                    'sell': macd_strategy[1],
+                    'buy': polinomial_strategy[0],
+                    'sell': polinomial_strategy[1],
                 }
             )
             position += 1
@@ -671,6 +671,26 @@ class GeneticAlgorithm:
             sell_macd = True
             
         return buy_macd, sell_macd            
+    
+    def polinomial_strategy(self, value, ag_variables):
+        k = list(value.keys())
+        print(k)
+        y = [0 for _ in value[k[0]]]
+        for i in range(len(value)):
+            y += np.array(value[k[i]]) * ag_variables[i]
+            
+        if len(y) % 2 != 0:
+            raise ValueError("Intarval must be a pair number")
+            
+        l_m =int(len(y) / 2)
+
+    
+        s0 = self.slope(y[:l_m])
+        s1 = self.slope(y[l_m:])
+        
+        return s0 <= 0 and s1 >= 0, s0 >= 0 and s1 <= 0, 
+        
+        
 
     def cross_variable(self, variable_1, variable_2):
         for i in range(len(variable_1)):       
@@ -684,16 +704,11 @@ class GeneticAlgorithm:
     
     def slope(self, variable):
         t = [i for i in range(len(variable))]
-        
-        reg_1 = linregress(
-            x=t[:-2],
-            y=variable[:-2]
+        reg = linregress(
+            x=t,
+            y=variable
         )
-        reg_2 = linregress(
-            x=t[-2:],
-            y=variable[-2:]
-        )
-        return reg_1[0] <= 0 and reg_2[0] > 0, reg_1[0] >= 0 and reg_2[0] < 0
+        return reg[0]
     
 
         # Toca comprar cuando evaluated tenga algunos valores

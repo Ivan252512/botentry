@@ -30,6 +30,8 @@ class Graphic:
         self.trading_interval = _trading_interval
         self.pair = _pair
         self.processed_data = None
+        self.cross_ma = []
+        self.cross_ema = []
         self.ma = None 
         self.graphic = None 
         self.indicators = []
@@ -82,6 +84,7 @@ class Graphic:
     def calculate_moving_average(self, _periods):
         self.processed_data['ma_{}'.format(_periods)] = self.processed_data.ewm(span=_periods, adjust=False).mean()
         self.indicators.append('ma_{}'.format(_periods))
+        self.cross_ma.append('ma_{}'.format(_periods))
         # self.exclude_to_ag.append('ma_{}'.format(_periods))
         self.graph_ag.append('ma_{}'.format(_periods))
         
@@ -91,7 +94,43 @@ class Graphic:
         if _graphic:
             self.indicators.append('ema_{}'.format(_periods))
             self.graph_ag.append('ema_{}'.format(_periods))
+        self.cross_ema.append('ema_{}'.format(_periods))
             
+    def get_cross_ma(self):
+        l = len(self.cross_ma)
+        for i in range(l):
+            for j in range(l):
+                if i < j:
+                    self.cross_variable(self.cross_ma[i], self.cross_ma[j])
+            
+    def get_cross_ema(self):
+        l = len(self.cross_ema)
+        for i in range(l):
+            for j in range(l):
+                if i < j:
+                    self.cross_variable(self.cross_ema[i], self.cross_ema[j])
+            
+    def cross_variable(self, name_var_1, name_var_2):
+        var_1 = self.processed_data[name_var_1]
+        var_2 = self.processed_data[name_var_2]
+        
+        min_1 = var_1[0] >= var_2[0]
+        
+        positions = [0 for _ in range(self.length)]
+        for i in range(self.length):
+            if var_1[i] >= var_2[i]:
+                if not min_1:
+                    positions[i] = 1
+            else:
+                if min_1:
+                    positions[i] = -1
+            
+            min_1 = var_1[i] >= var_2[i]
+            
+        self.processed_data['cross_{}_{}'.format(name_var_1, name_var_2)] = positions
+        self.indicators.append('cross_{}_{}'.format(name_var_1, name_var_2))
+        self.graph_ag.append('cross_{}_{}'.format(name_var_1, name_var_2))
+                        
     def calculate_macd(self):
         self.processed_data['macd'] = self.processed_data['ema_12'] - self.processed_data['ema_26']
         self.indicators.append('macd')
@@ -288,7 +327,7 @@ class Graphic:
         
     def graph_for_ag(self, _initial, _score, _last_operation):
         subplots = []
-        print(self.graph_ag)
+        # print(self.graph_ag)
         for i in self.graph_ag:
             if "sells" in i:
                 subplots.append(
@@ -385,8 +424,8 @@ class Graphic:
         
         s = fplt.make_mpf_style(base_mpf_style='charles', rc={'font.size':2})
         
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-            print(self.processed_data)
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        #     print(self.processed_data)
 
         fplt.plot(
             self.processed_data,
@@ -415,7 +454,7 @@ class Graphic:
         
     def graph_for_evaluated_not_ai(self, _initial, _score, _last_operation):
         subplots = []
-        print(self.graph_ag)
+        # print(self.graph_ag)
         for i in self.graph_ag:
             if "sells" in i:
                 subplots.append(
@@ -459,12 +498,24 @@ class Graphic:
                         )
                     )
                 elif "ema" in i:
-                    subplots.append(
-                        fplt.make_addplot(
-                            self.processed_data[i],
-                            type='line',
+                    if "cross" in i:
+                        pass
+                        # subplots.append(
+                        #     fplt.make_addplot(
+                        #         self.processed_data[i],
+                        #         type='scatter',
+                        #         markersize=20,
+                        #         marker='*',
+                        #         color="black"
+                        #     )
+                        # )
+                    else:
+                        subplots.append(
+                            fplt.make_addplot(
+                                self.processed_data[i],
+                                type='line',
+                            )
                         )
-                    )
                 elif "macd" in i:
                     subplots.append(
                         fplt.make_addplot(
@@ -531,8 +582,8 @@ class Graphic:
         
         s = fplt.make_mpf_style(base_mpf_style='charles', rc={'font.size':2})
         
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-            print(self.processed_data)
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        #     print(self.processed_data)
 
         fplt.plot(
             self.processed_data,
