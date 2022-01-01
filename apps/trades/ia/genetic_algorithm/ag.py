@@ -674,7 +674,6 @@ class GeneticAlgorithm:
     
     def polinomial_strategy(self, value, ag_variables):
         k = list(value.keys())
-        print(k)
         y = [0 for _ in value[k[0]]]
         for i in range(len(value)):
             y += np.array(value[k[i]]) * ag_variables[i]
