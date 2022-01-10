@@ -81,3 +81,24 @@ class SimulateMarket:
 
 def function_stop_loss(prices, sl_percent, sl_divisor):
     return prices[-1] * (1 + (sl_divisor))
+
+class SimulateShort:
+    def __init__(self):
+        self.price_at_short = 0
+        self.total_shorted = 0
+        
+    def short(self, _price_at_short, _total_shorted):
+        self.__restart()
+        self.price_at_short = _price_at_short
+        self.total_shorted = _total_shorted
+        
+    def close(self, _price_at_close):
+        total_at_open = self.price_at_short * self.total_shorted
+        total_at_close = _price_at_close * self.total_shorted
+        self.__restart()
+        return total_at_close - total_at_open
+    
+    def __restart(self):
+        self.price_at_short = 0
+        self.total_shorted = 0
+        

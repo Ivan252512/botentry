@@ -5,6 +5,7 @@ from scipy.stats import linregress
 
 from apps.trades.ia.utils.utils import (
     SimulateBasicWallet,
+    SimulateShort
 )
 
 from apps.trades.ia.utils.binary_tree import (
@@ -301,6 +302,7 @@ class GeneticAlgorithm:
         self.stop_loss_divisor_plus = _stop_loss_divisor_plus
         self.keys = _keys
         self.variables = _variables
+        self.type_variables_to_evaluate_ag = ["histogram"]
         for _ in range(self.populations_quantity):
             self.populations.append(
                 Population(
@@ -521,6 +523,7 @@ class GeneticAlgorithm:
         sl_divisor_plus = self.stop_loss_divisor_plus
 
         _wallet = SimulateBasicWallet()
+        _short = SimulateShort()
         _wallet.deposit_coin_1(initial_amount)
         if individual.score == 0 or not individual.relevant_info:
             evaluation, evaluated = self.__evaluate(individual, evaluation_intervals)
@@ -529,8 +532,15 @@ class GeneticAlgorithm:
                 if e["position_time"] < self.periods_environment:
                     if e["buy"]:
                         # print(e)
+                        
                         coin_1_quantity = _wallet.get_balance_in_coin1()
                         if coin_1_quantity > 10:
+                            coin_2_quantity, coin_2_price = market.transaction_at_moment_buy_coin2(
+                                coin_1_quantity, e['position_time'])
+                            # Short
+                            profit = _short.close(coin_2_price)
+                            _wallet.deposit_coin_1(profit)
+                            coin_1_quantity = _wallet.get_balance_in_coin1()
                             coin_2_quantity, coin_2_price = market.transaction_at_moment_buy_coin2(
                                 coin_1_quantity, e['position_time'])
                             if _wallet.buy_coin_2(coin_1_quantity, coin_2_quantity):
@@ -544,6 +554,7 @@ class GeneticAlgorithm:
                                     'stop_loss': [coin_2_price * (1 - sl_percent)]
                                 })
                                 #print("compra", individual.relevant_info)
+                                
                     if e["sell"]:
                         coin_2_quantity = _wallet.get_balance_in_coin2()
                         if coin_2_quantity > 0:
@@ -559,6 +570,8 @@ class GeneticAlgorithm:
                                     'balance_coin_1': _wallet.get_balance_in_coin1(),
                                     'balance_coin_2': _wallet.get_balance_in_coin2()
                                 })
+                                # Short
+                                _short.short(coin_2_price_market, coin_2_quantity)
                     else:
                         if len(individual.relevant_info) > 0 and "coin_1_sell_quantity" in individual.relevant_info[-1]:
                             _, coin_2_last_price_price = market.transaction_at_moment_sell_coin2(
@@ -673,19 +686,25 @@ class GeneticAlgorithm:
         return buy_macd, sell_macd            
     
     def polinomial_strategy(self, value, ag_variables):
+        
         k = list(value.keys())
+        
+        # print(k)
+        
         y = [0 for _ in value[k[0]]]
         for i in range(len(value)):
+            # for j in self.type_variables_to_evaluate_ag:
+            #     if j in k[i]:
             y += np.array(value[k[i]]) * ag_variables[i]
             
         if len(y) % 2 != 0:
             raise ValueError("Intarval must be a pair number")
             
-        l_m =int(len(y) / 2)
+        l_m =int(len(y) / 4)
 
     
-        s0 = self.slope(y[:l_m])
-        s1 = self.slope(y[l_m:])
+        s0 = self.slope(y[:3 * l_m])
+        s1 = self.slope(y[3 * l_m:])
         
         return s0 <= 0 and s1 >= 0, s0 >= 0 and s1 <= 0, 
         

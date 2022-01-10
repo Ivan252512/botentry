@@ -66,7 +66,7 @@ class Trader:
         self.graphic.calculate_macd()
         self.graphic.calculate_signal()
         self.graphic.calculate_histogram()
-        self.graphic.calculate_fibonacci_retracement()
+        # self.graphic.calculate_fibonacci_retracement()
         for i in range(3, 9, 3):
             self.graphic.get_second_derivative(_sigma_gaussian_filter=i)
         if _graphic:

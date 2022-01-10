@@ -29,6 +29,8 @@ urlpatterns = [
     # With AG
     path('bot/train', views.async_train, name='train'),
     path('bot/evaluate', views.evaluate, name='evaluate'),
+    path('bot/test_post_to_facebook', views.test_post_to_facebook, name='test_post_to_facebook'),
+    path('bot/futures_create_order', views.futures_create_order, name='futures_create_order'),
     
     # Without AG
     path('bot/evaluate_no_ai', views.evaluate_no_ai, name='evaluate_no_ai'),

@@ -44,7 +44,8 @@ class TraderBot(object):
                  _coin2,
                  _periods_environment,
                 _interval,
-                _variables
+                _variables,
+                _socialmedia
         ):
         self.money = _money
         self.stop_loss_percent = _sl_percent
@@ -69,6 +70,7 @@ class TraderBot(object):
         self.periods_environment = _periods_environment
         self.interval = _interval
         self.variables = _variables
+        self.socialmedia = _socialmedia
         
 
     def eval_function_with_genetic_algorithm(self):
@@ -213,7 +215,7 @@ class TraderBot(object):
                 data = {
                     "market": self.market,
                     "initial_amount": self.money,
-                    "evaluation_intervals": 4,
+                    "evaluation_intervals": self.interval,
                     "individual": individual
                 }
 
@@ -651,7 +653,11 @@ class TraderBot(object):
         for t in self.traders_per_period:
             if t['ag']:
                 t['trader'].graphic.graph_for_evaluated_not_ai(
-                    self.money, t['ag']['score'], t['ag']['last_operation'])
+                    self.money, 
+                    t['ag']['score'], 
+                    t['ag']['last_operation'], 
+                    self.socialmedia
+                )
             t['trader'].graphic.graph()
 
 

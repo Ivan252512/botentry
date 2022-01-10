@@ -34,6 +34,8 @@ from apps.trades.ia.basic_trading.trader import (
 
 from apps.trades.ia.utils.strategies.strategies import Strategy
 
+from apps.trades.socialmedia.facebook import Facebook
+
 # Exchange endpoints
 
 PAIR_INFO = {
@@ -207,6 +209,43 @@ def get_account(request):
 
 # Bot Endpoints
 
+def test_post_to_facebook(request):
+    if request.method == "GET":
+        fb = Facebook()
+        res = fb.test_post_photo()
+        return JsonResponse({'message': res}, status=200)
+    else:
+        return JsonResponse({'message': 'Metodo no permitido'}, status=405)
+
+@csrf_exempt    
+def futures_create_order(request):
+    if request.method == "POST":
+        client = Client()
+        
+        # symbol	        STRING	YES	
+        # side              ENUM	YES	
+        # positionSide	    ENUM	NO	Default BOTH for One-way Mode ; LONG or SHORT for Hedge Mode. It must be sent in Hedge Mode.
+        # type	            ENUM	YES	
+        # timeInForce	    ENUM	NO	
+        # quantity	        DECIMAL	NO	Cannot be sent with closePosition=true
+        # reduceOnly	    STRING	NO	"true" or "false". default "false". Cannot be sent in Hedge Mode; cannot be sent with closePosition=true(Close-All)
+        # price	            DECIMAL	NO	
+        # newClientOrderId	STRING	NO	A unique id among open orders. Automatically generated if not sent. Can only be string following the rule: ^[\.A-Z\:/a-z0-9_-]{1,36}$
+        # stopPrice	        DECIMAL	NO	Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        # closePosition	    STRING	NO	true, false；Close-All,used with STOP_MARKET or TAKE_PROFIT_MARKET.
+        # activationPrice	DECIMAL	NO	Used with TRAILING_STOP_MARKET orders, default as the latest price(supporting different workingType)
+        # callbackRate	    DECIMAL	NO	Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%
+        # workingType	    ENUM	NO	stopPrice triggered by: "MARK_PRICE", "CONTRACT_PRICE". Default "CONTRACT_PRICE"
+        # priceProtect	    STRING	NO	"TRUE" or "FALSE", default "FALSE". Used with STOP/STOP_MARKET or TAKE_PROFIT/TAKE_PROFIT_MARKET orders.
+        # newOrderRespType	ENUM	NO	"ACK", "RESULT", default "ACK"
+        # recvWindow	    LONG	NO	
+        # timestamp	        LONG	YES
+        
+        exchange_info = client.futures_coin_get_all_orders()
+        return JsonResponse({'message': exchange_info}, status=200)
+    else:
+        return JsonResponse({'message': 'Metodo no permitido'}, status=405)
+
 
 @csrf_exempt
 def train(request):
@@ -227,7 +266,8 @@ def train(request):
         "pair",
         "periods_environment",
         "interval",
-        "variables"
+        "variables",
+        "socialmedia"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))
@@ -290,7 +330,8 @@ def evaluate(request):
         "pair",
         "periods_environment",
         "interval",
-        "variables"
+        "variables",
+        "socialmedia"
     ]
     fields_to_func = {}
     body = json.loads(request.body.decode('utf-8'))

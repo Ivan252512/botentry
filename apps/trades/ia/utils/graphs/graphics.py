@@ -19,6 +19,8 @@ import time
 
 from django.conf import settings
 
+from apps.trades.socialmedia.facebook import Facebook
+
 # https://www.geeksforgeeks.org/plot-candlestick-chart-using-mplfinance-module-in-python/
 # https://coderzcolumn.com/tutorials/data-science/candlestick-chart-in-python-mplfinance-plotly-bokeh
 
@@ -130,6 +132,7 @@ class Graphic:
         self.processed_data['cross_{}_{}'.format(name_var_1, name_var_2)] = positions
         self.indicators.append('cross_{}_{}'.format(name_var_1, name_var_2))
         self.graph_ag.append('cross_{}_{}'.format(name_var_1, name_var_2))
+        self.exclude_to_ag.append('cross_{}_{}'.format(name_var_1, name_var_2))
                         
     def calculate_macd(self):
         self.processed_data['macd'] = self.processed_data['ema_12'] - self.processed_data['ema_26']
@@ -305,12 +308,12 @@ class Graphic:
         ).mkdir(parents=True, exist_ok=True)
         current_date = datetime.datetime.now()
         save= dict(
-            fname="graphics/{}/{}/pd/{}.png".format(
+            fname="graphics/{}/{}/pd/{}.jpg".format(
                 self.pair,
                 self.trading_interval,
                 current_date.strftime("%m_%d_%Y_%H_%M_%S")
             ),
-            dpi=300,
+            dpi=150,
         )
 
         fplt.plot(
@@ -322,6 +325,7 @@ class Graphic:
             volume=True,
             ylabel_lower='Shares\nTraded',
             addplot=subplots,
+            tight_layout=True,
             savefig=save
         ) 
         
@@ -336,7 +340,7 @@ class Graphic:
                         type='scatter',
                         markersize=10,
                         marker='v',
-                        color="green"
+                        color="red"
                         
                     )
                 )
@@ -347,7 +351,7 @@ class Graphic:
                         type='scatter',
                         markersize=10,
                         marker='^',
-                        color="red"
+                        color="green"
                     )
                 )
             elif "stop_loss" in i:
@@ -397,7 +401,7 @@ class Graphic:
                     )
 
         current_date = datetime.datetime.now()
-        name_file = current_date.strftime("%m_%d_%Y_%H_%M_%S") + ".png"
+        name_file = current_date.strftime("%m_%d_%Y_%H_%M_%S") + ".jpg"
         ubication_file = "graphics/{}/{}/ag/{}".format(
                 self.pair,
                 self.trading_interval,
@@ -411,7 +415,7 @@ class Graphic:
         ).mkdir(parents=True, exist_ok=True)
         save= dict(
             fname=ubication_file,
-            dpi=600,
+            dpi=150,
         )
 
         lo = ""
@@ -435,6 +439,7 @@ class Graphic:
             ylabel='Price ($)',
             volume=True,
             ylabel_lower='Shares\nTraded',
+            tight_layout=True,
             addplot=subplots,
             savefig=save
         ) 
@@ -452,7 +457,7 @@ class Graphic:
 
         # client.upload_file(ubication_file, settings.AWS_BUCKET, ubication_file)
         
-    def graph_for_evaluated_not_ai(self, _initial, _score, _last_operation):
+    def graph_for_evaluated_not_ai(self, _initial, _score, _last_operation, _socialmedia):
         subplots = []
         # print(self.graph_ag)
         for i in self.graph_ag:
@@ -461,9 +466,9 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=50,
+                        markersize=10,
                         marker='v',
-                        color="green"
+                        color="red"
                         
                     )
                 )
@@ -472,9 +477,9 @@ class Graphic:
                     fplt.make_addplot(
                         self.processed_data[i],
                         type='scatter',
-                        markersize=50,
+                        markersize=10,
                         marker='^',
-                        color="red"
+                        color="green"
                     )
                 )
             #elif "stop_loss" in i:
@@ -555,7 +560,7 @@ class Graphic:
 
 
         current_date = datetime.datetime.now()
-        name_file = current_date.strftime("%m_%d_%Y_%H_%M_%S") + ".png"
+        name_file = current_date.strftime("%m_%d_%Y_%H_%M_%S") + ".jpg"
         ubication_file = "graphics/{}/{}/not_ai/{}".format(
                 self.pair,
                 self.trading_interval,
@@ -567,9 +572,13 @@ class Graphic:
                 self.trading_interval
             )
         ).mkdir(parents=True, exist_ok=True)
+        
+        dpi = 150
+        if not _socialmedia:
+            dpi = 1200 
         save= dict(
             fname=ubication_file,
-            dpi=1400,
+            dpi=dpi,
         )
 
         lo = ""
@@ -585,6 +594,7 @@ class Graphic:
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         #     print(self.processed_data)
 
+
         fplt.plot(
             self.processed_data,
             type='candle',
@@ -593,9 +603,34 @@ class Graphic:
             ylabel='Price ($)',
             ylabel_lower='Shares\nTraded',
             addplot=subplots,
+            tight_layout=True,
             savefig=save
         ) 
         
+        print(_socialmedia)
+        
+        if _socialmedia:
+        
+            session = boto3.Session(
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            )
+
+            client = session.client(
+                's3',
+                'us-west-2'
+            )
+
+            client.upload_file(ubication_file, settings.AWS_BUCKET, ubication_file)
+
+            fb = Facebook()
+
+            base = "https://botentry.s3.us-west-2.amazonaws.com/" + ubication_file
+            message = "Hola mundo desde la api"
+
+            res = fb.post_photo(message, base)
+            
+            print(res)
 
                 
     def process_data_received_ag(self, data, evaluated_function):
@@ -630,7 +665,7 @@ class Graphic:
         # self.graph_ag.extend(["sells", "buys"]) #, "evaluated_function"])
         
         # operacion = "comprar" if 'coin_1_sell_quantity' in data[-1] else "stop_loss_increment"
-        return data[-1]
+        return data[-1] if data else {}
     
     def process_data_received_not_ai(self, data):
         buys = [np.nan for _ in range(self.length)]

@@ -7,7 +7,7 @@ from datetime import datetime
 
 time.sleep(60)
 
-trade_period = "15m"
+trade_period = "1h"
 
 url = "http://127.0.0.1:7000/trades/bot/{}"
 
@@ -15,17 +15,21 @@ url8000 = "http://127.0.0.1:8001/trades/bot/{}"
 
 payload = json.dumps({
   "principal_trade_period": trade_period,
-  "money": 3700,
-  "sl_percent": 0.01,
-  "sl_period": 0.002,
-  "population_min": 50,
-  "population_max": 100,
-  "individual_dna_length": 12,
-  "individual_muatition_intensity": 360,
-  "min_cod_ind_value": 0,
-  "max_cod_ind_value": 4096,
+  "money": 10000,
+  "sl_percent": 0.4,
+  "sl_period": 0.0004,
+  "population_min": 10,
+  "population_max": 20,
+  "individual_dna_length": 256,
+  "individual_muatition_intensity": 128,
+  "min_cod_ind_value": -1,
+  "max_cod_ind_value": 1,
   "generations_ind": 1000,
-  "pair": "BNBBUSD"
+  "pair": "BNBBUSD",
+  "periods_environment": 500,
+  "interval": 8,
+  "variables": 0,
+  "socialmedia": False
 })
 
 headers = {
@@ -59,3 +63,9 @@ elif trade_period == "1h":
   while True:
       schedule.run_pending()
       time.sleep(60)
+elif trade_period == "4h":
+  schedule.every(4).hour.at(":01").do(evaluate)
+  while True:
+      schedule.run_pending()
+      time.sleep(60)
+
