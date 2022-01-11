@@ -83,9 +83,9 @@ class TraderBot(object):
             data = trader.graphic.get_processed_data()
             ag = {}
             if p == self.principal_trade_period:
-                data_normalized = trader.graphic.get_normalized_processed_data()
-                environment = data_normalized.values.tolist()
-                # environment = data.values.tolist()
+                # data_normalized = trader.graphic.get_normalized_processed_data()
+                # environment = data_normalized.values.tolist()
+                environment = data.values.tolist()
                 keys = data.keys()
 
                 # Market info

@@ -302,7 +302,7 @@ class GeneticAlgorithm:
         self.stop_loss_divisor_plus = _stop_loss_divisor_plus
         self.keys = _keys
         self.variables = _variables
-        self.type_variables_to_evaluate_ag = ["histogram"]
+        self.type_variables_to_evaluate_ag = ["cross"]
         for _ in range(self.populations_quantity):
             self.populations.append(
                 Population(
@@ -689,24 +689,30 @@ class GeneticAlgorithm:
         
         k = list(value.keys())
         
-        # print(k)
         
         y = [0 for _ in value[k[0]]]
         for i in range(len(value)):
-            # for j in self.type_variables_to_evaluate_ag:
-            #     if j in k[i]:
-            y += np.array(value[k[i]]) * ag_variables[i]
+            to_evaluate = False
+            for j in self.type_variables_to_evaluate_ag:
+                if j in k[i]:
+                    to_evaluate =  True
+                    break
+            if to_evaluate:
+                y += np.array(value[k[i]]) * ag_variables[i]
             
         if len(y) % 2 != 0:
             raise ValueError("Intarval must be a pair number")
             
-        l_m =int(len(y) / 4)
-
-    
-        s0 = self.slope(y[:3 * l_m])
-        s1 = self.slope(y[3 * l_m:])
+        # print(y)    
+        return np.mean(y) > 0.25, np.mean(y) < - 0.25
         
-        return s0 <= 0 and s1 >= 0, s0 >= 0 and s1 <= 0, 
+        #l_m =int(len(y) / 4)
+        #
+
+        #s0 = self.slope(y[:3 * l_m])
+        #s1 = self.slope(y[3 * l_m:])
+        #
+        #return s0[-1] < s1[-1], s0[-1] > s1[-1]
         
         
 
@@ -726,7 +732,7 @@ class GeneticAlgorithm:
             x=t,
             y=variable
         )
-        return reg[0]
+        return [i * reg[0] + reg[1] for i in t]
     
 
         # Toca comprar cuando evaluated tenga algunos valores
